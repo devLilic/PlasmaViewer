@@ -24,6 +24,7 @@ describe('feature toggles', () => {
 
     expect(getEnabledFeatures(config)).toEqual([
       'i18n',
+      'autoUpdate',
       'database',
     ])
   })

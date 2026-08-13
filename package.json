@@ -1,12 +1,13 @@
 {
-  "name": "default-electron-app-template",
-  "productName": "Default Electron App",
+  "name": "plasma-viewer",
+  "productName": "PlasmaViewer",
   "version": "0.1.0",
   "main": "dist-electron/main/index.js",
-  "description": "Template for modular Electron desktop applications.",
+  "description": "PlasmaViewer desktop application.",
   "author": "devLilic13",
   "license": "MIT",
   "private": true,
+  "repository": "https://github.com/devLilic/PlasmaViewer.git",
   "debug": {
     "env": {
       "VITE_DEV_SERVER_URL": "http://127.0.0.1:7777/"

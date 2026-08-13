@@ -9,6 +9,7 @@ import type {
 } from '../licensing/contracts'
 import type { AppSettings, SettingsKey } from '../settings/types'
 import type { UpdateErrorPayload, UpdateStateEvent, VersionInfo } from '../types/update'
+import type { ViewerState, ViewerTransform, ViewerWindowSettings } from '../viewer/contracts'
 
 export const ipcInvokeChannels = {
   appGetInfo: 'app:get-info',
@@ -28,6 +29,12 @@ export const ipcInvokeChannels = {
   databaseQuery: 'database:query',
   settingsGet: 'settings:get',
   settingsSet: 'settings:set',
+  viewerGetState: 'viewer:get-state',
+  viewerSetTransform: 'viewer:set-transform',
+  viewerSetWindow: 'viewer:set-window',
+  viewerResetTransform: 'viewer:reset-transform',
+  viewerShowOutput: 'viewer:show-output',
+  viewerHideOutput: 'viewer:hide-output',
 } as const
 
 export const ipcEventChannels = {
@@ -37,6 +44,7 @@ export const ipcEventChannels = {
   updateError: 'update:error',
   updateDownloadProgress: 'update:download-progress',
   updateDownloaded: 'update:downloaded',
+  viewerStateChanged: 'viewer:state-changed',
 } as const
 
 export interface AppInfoPayload {
@@ -171,6 +179,12 @@ export interface IpcInvokeContract {
     request: SettingsValuePayload
     response: SettingsValuePayload
   }
+  [ipcInvokeChannels.viewerGetState]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerSetTransform]: { request: ViewerTransform; response: ViewerState }
+  [ipcInvokeChannels.viewerSetWindow]: { request: Partial<ViewerWindowSettings>; response: ViewerState }
+  [ipcInvokeChannels.viewerResetTransform]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerShowOutput]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerHideOutput]: { request: void; response: ViewerState }
 }
 
 export interface IpcEventContract {
@@ -180,4 +194,5 @@ export interface IpcEventContract {
   [ipcEventChannels.updateError]: UpdateErrorPayload
   [ipcEventChannels.updateDownloadProgress]: ProgressInfo
   [ipcEventChannels.updateDownloaded]: void
+  [ipcEventChannels.viewerStateChanged]: ViewerState
 }

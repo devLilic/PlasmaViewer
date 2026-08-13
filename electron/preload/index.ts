@@ -1,5 +1,6 @@
 import { loadConfig } from '../../config/loadConfig'
 import { registerPreloadModuleRegistry } from './registerPreloadModuleRegistry'
+import { exposeViewerApi } from './modules/viewerApi'
 
 function domReady(condition: DocumentReadyState[] = ['complete', 'interactive']) {
   return new Promise((resolve) => {
@@ -78,6 +79,7 @@ function useLoading() {
 }
 
 registerPreloadModuleRegistry(loadConfig())
+exposeViewerApi()
 
 const { appendLoading, removeLoading } = useLoading()
 domReady().then(() => appendLoading())

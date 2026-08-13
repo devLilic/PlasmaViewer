@@ -2,25 +2,25 @@ import type { AppConfig } from './types'
 
 export const baseConfig: AppConfig = {
   environment: 'development',
-  appName: 'default-electron-app',
+  appName: 'plasma-viewer',
   features: {
     i18n: false,
-    autoUpdate: false,
+    autoUpdate: true,
     appProtection: false,
     licensing: false,
     database: false,
     logging: true,
   },
   update: {
-    enabled: false,
+    enabled: true,
     channel: 'latest',
     autoCheck: true,
     autoDownload: false,
     allowPrerelease: false,
     provider: {
       provider: 'github',
-      owner: 'YOUR_GITHUB_OWNER',
-      repo: 'YOUR_RELEASE_REPO',
+      owner: 'devLilic',
+      repo: 'PlasmaViewer',
       visibility: 'public',
     },
   },
