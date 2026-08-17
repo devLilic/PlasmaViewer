@@ -8,10 +8,10 @@ describe('viewer state store', () => {
   it('persists output settings without carrying image transforms between sessions', () => {
     const store = createViewerStateStore(mkdtempSync(path.join(tmpdir(), 'plasma-viewer-')))
     store.write({
-      window: { displayId: '3', fullscreen: false, topmost: true },
+      window: { displayId: '3', fullscreen: false, topmost: true, bounds: { x: 120, y: 80, width: 1280, height: 720 } },
       defaultImagePath: 'C:\\Media\\fundal.jpg',
     })
-    expect(store.read().window).toEqual({ displayId: '3', fullscreen: false, topmost: true })
+    expect(store.read().window).toEqual({ displayId: '3', fullscreen: false, topmost: true, bounds: { x: 120, y: 80, width: 1280, height: 720 } })
     expect(store.read().defaultImagePath).toBe('C:\\Media\\fundal.jpg')
   })
 
@@ -23,5 +23,6 @@ describe('viewer state store', () => {
     const store = createViewerStateStore(storageDir)
 
     expect(store.read().defaultImagePath).toBeNull()
+    expect(store.read().window.bounds).toBeNull()
   })
 })

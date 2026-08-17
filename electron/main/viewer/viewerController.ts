@@ -10,6 +10,7 @@ import {
   type ViewerCommand,
   type ViewerDisplay,
   type ViewerState,
+  type ViewerWindowBounds,
   type ViewerWindowSettings,
 } from '../../../src/shared/viewer/contracts'
 
@@ -27,6 +28,7 @@ export class ViewerController {
   private readonly store = createViewerStateStore(app.getPath('userData'))
   private defaultImagePath: string | null
   private state: ViewerState
+  private applyingWindowSettings = false
 
   constructor() {
     const persisted = this.store.read()
@@ -73,6 +75,8 @@ export class ViewerController {
     })
     this.controlWindow.on('closed', () => { this.controlWindow = null })
     this.outputWindow.on('closed', () => { this.outputWindow = null })
+    this.outputWindow.on('move', () => this.rememberOutputBounds())
+    this.outputWindow.on('resize', () => this.rememberOutputBounds())
 
     await Promise.all([this.loadView(this.controlWindow, 'control'), this.loadView(this.outputWindow, 'output')])
     this.applyWindowSettings(this.state.window, true)
@@ -99,8 +103,12 @@ export class ViewerController {
     } else if (command.type === 'hide') {
       this.hide()
     } else if (command.type === 'window') {
-      this.state.window = { ...this.state.window, ...command.payload }
-      const shouldReposition = command.payload.displayId !== undefined || command.payload.fullscreen !== undefined
+      this.state.window = {
+        ...this.state.window,
+        ...command.payload,
+        bounds: command.payload.bounds === undefined ? this.state.window.bounds : command.payload.bounds,
+      }
+      const shouldReposition = command.payload.displayId !== undefined || command.payload.fullscreen !== undefined || command.payload.bounds !== undefined
       this.applyWindowSettings(this.state.window, shouldReposition)
     } else if (command.type === 'reset-transform') {
       this.state.transform = defaultViewerTransform
@@ -206,12 +214,32 @@ export class ViewerController {
     if (!this.outputWindow) return
     this.refreshDisplays()
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
-    this.outputWindow.setAlwaysOnTop(settings.topmost, settings.topmost ? 'screen-saver' : 'normal')
-    this.outputWindow.setFullScreen(false)
-    this.outputWindow.setMovable(!settings.fullscreen)
-    if (settings.fullscreen) this.outputWindow.setBounds(display.bounds)
-    else if (reposition) this.outputWindow.setBounds(centeredBounds(display.workArea))
-    this.outputWindow.setFullScreen(settings.fullscreen)
+    this.applyingWindowSettings = true
+    try {
+      this.outputWindow.setAlwaysOnTop(settings.topmost, settings.topmost ? 'screen-saver' : 'normal')
+      this.outputWindow.setFullScreen(false)
+      this.outputWindow.setMovable(!settings.fullscreen)
+      if (settings.fullscreen) {
+        this.outputWindow.setBounds(display.bounds)
+        this.outputWindow.setFullScreen(true)
+        return
+      }
+
+      const bounds = normalizeBounds(settings.bounds, display.workArea)
+      if (reposition || !sameBounds(this.outputWindow.getBounds(), bounds)) this.outputWindow.setBounds(bounds)
+      this.state.window.bounds = bounds
+    } finally {
+      this.applyingWindowSettings = false
+    }
+  }
+
+  private rememberOutputBounds() {
+    if (!this.outputWindow || this.applyingWindowSettings || this.state.window.fullscreen || this.outputWindow.isFullScreen()) return
+    const bounds = this.outputWindow.getBounds()
+    if (sameBounds(this.state.window.bounds, bounds)) return
+    this.state.window.bounds = bounds
+    this.persist()
+    this.broadcast()
   }
 
   private async validateImage(url: string) {
@@ -240,7 +268,20 @@ export class ViewerController {
   }
 }
 
-function centeredBounds(workArea: Electron.Rectangle) {
+function normalizeBounds(bounds: ViewerWindowBounds | null, workArea: Electron.Rectangle): ViewerWindowBounds {
+  if (!bounds) return centeredBounds(workArea)
+  const width = Math.min(Math.max(320, bounds.width), workArea.width)
+  const height = Math.min(Math.max(180, bounds.height), workArea.height)
+  const x = Math.min(Math.max(bounds.x, workArea.x), workArea.x + workArea.width - width)
+  const y = Math.min(Math.max(bounds.y, workArea.y), workArea.y + workArea.height - height)
+  return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) }
+}
+
+function sameBounds(first: ViewerWindowBounds | null, second: Electron.Rectangle) {
+  return first?.x === second.x && first.y === second.y && first.width === second.width && first.height === second.height
+}
+
+function centeredBounds(workArea: Electron.Rectangle): ViewerWindowBounds {
   const width = Math.min(1280, workArea.width)
   const height = Math.min(720, workArea.height)
   return {

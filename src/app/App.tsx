@@ -6,8 +6,8 @@ const initial: ViewerState = {
   visible: false,
   activeImage: null,
   defaultImage: null,
-  transform: { brightness: 100, zoom: 1, panX: 0, panY: 0, flipX: false },
-  window: { displayId: null, fullscreen: true, topmost: false },
+  transform: { brightness: 100, contrast: 100, zoom: 1, panX: 0, panY: 0, flipX: false },
+  window: { displayId: null, fullscreen: true, topmost: false, bounds: null },
   displays: [],
   lastCommandId: null,
   error: null,
@@ -89,6 +89,7 @@ function Control({ state }: { state: ViewerState }) {
             <div>
               <strong>{state.activeImage?.title ?? state.defaultImage?.name ?? 'Fără imagine'}</strong>
               <small>{state.activeImage ? `Articol #${state.activeImage.articleId}` : state.defaultImage ? 'Imagine implicită FR2' : 'Apasă onAIR în playlist'}</small>
+              {state.activeImage && <small className="image-source">Sursă locală: {state.activeImage.source ?? 'Fișier local indisponibil'}</small>}
             </div>
             <div className="actions">
               <button className="secondary" disabled={!state.visible} onClick={() => window.viewerApi.hideOutput()}>Ascunde</button>
@@ -106,6 +107,16 @@ function Control({ state }: { state: ViewerState }) {
           <Toggle label="Întotdeauna deasupra" checked={state.window.topmost} onChange={checked => window.viewerApi.setWindow({ topmost: checked })} />
 
           <div className="divider" />
+          <h2>Poziție și dimensiune FR2</h2>
+          <p className="hint">Aceste valori se aplică atunci când fullscreen este dezactivat și sunt păstrate după repornire.</p>
+          <div className="window-bounds">
+            <NumberField label="Stânga" value={state.window.bounds?.x ?? 0} onChange={x => updateWindowBounds(state, { x })} />
+            <NumberField label="Sus" value={state.window.bounds?.y ?? 0} onChange={y => updateWindowBounds(state, { y })} />
+            <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width })} />
+            <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height })} />
+          </div>
+
+          <div className="divider" />
           <h2>Imagine implicită FR2</h2>
           <p className="default-image-name">{state.defaultImage?.name ?? 'Nicio imagine configurată'}</p>
           <div className="default-image-actions">
@@ -117,6 +128,7 @@ function Control({ state }: { state: ViewerState }) {
           <div className="divider" />
           <h2>Ajustări imagine plasma.test</h2>
           <Range label="Luminozitate" value={state.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateTransform({ brightness })} />
+          <Range label="Contrast" value={state.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateTransform({ contrast })} />
           <Range label="Zoom" value={state.transform.zoom} min={1} max={4} step={0.01} unit="×" onChange={zoom => updateTransform({ zoom })} />
           <Range label="Poziție X" value={state.transform.panX} min={-100} max={100} unit="%" onChange={panX => updateTransform({ panX })} />
           <Range label="Poziție Y" value={state.transform.panY} min={-100} max={100} unit="%" onChange={panY => updateTransform({ panY })} />
@@ -137,9 +149,25 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   return <label className="toggle-row"><span>{label}</span><input type="checkbox" checked={checked} onChange={event => onChange(event.target.checked)} /><i /></label>
 }
 
+function NumberField({ label, value, min, onChange }: { label: string; value: number; min?: number; onChange: (value: number) => void }) {
+  const [draft, setDraft] = useState(String(value))
+  useEffect(() => setDraft(String(value)), [value])
+  const commit = () => {
+    const next = Number(draft)
+    if (!Number.isFinite(next) || (min !== undefined && next < min)) return setDraft(String(value))
+    onChange(Math.round(next))
+  }
+  return <label className="number-field"><span>{label}</span><input type="number" value={draft} min={min} step="1" onChange={event => setDraft(event.target.value)} onBlur={commit} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label>
+}
+
+function updateWindowBounds(state: ViewerState, patch: Partial<NonNullable<ViewerState['window']['bounds']>>) {
+  const bounds = { x: 0, y: 0, width: 1280, height: 720, ...state.window.bounds, ...patch }
+  void window.viewerApi.setWindow({ bounds })
+}
+
 function imageStyle(transform: ViewerTransform) {
   return {
-    filter: `brightness(${transform.brightness}%)`,
+    filter: `brightness(${transform.brightness}%) contrast(${transform.contrast}%)`,
     transform: `translate(${transform.panX}%, ${transform.panY}%) scale(${transform.zoom}) scaleX(${transform.flipX ? -1 : 1})`,
   }
 }

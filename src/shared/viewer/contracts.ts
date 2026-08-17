@@ -2,6 +2,7 @@ export const VIEWER_PROTOCOL_VERSION = 1 as const
 
 export interface ViewerTransform {
   brightness: number
+  contrast: number
   zoom: number
   panX: number
   panY: number
@@ -13,6 +14,7 @@ export interface ViewerImage {
   articleId: number
   title: string
   url: string
+  source: string | null
 }
 
 export interface ViewerDisplay {
@@ -27,6 +29,14 @@ export interface ViewerWindowSettings {
   displayId: string | null
   fullscreen: boolean
   topmost: boolean
+  bounds: ViewerWindowBounds | null
+}
+
+export interface ViewerWindowBounds {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export interface ViewerDefaultImage {
@@ -47,6 +57,7 @@ export interface ViewerState {
 
 export const defaultViewerTransform: ViewerTransform = {
   brightness: 100,
+  contrast: 100,
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -63,6 +74,7 @@ export type ViewerCommand =
 export function normalizeTransform(value: Partial<ViewerTransform>): ViewerTransform {
   return {
     brightness: clamp(value.brightness ?? 100, 0, 200),
+    contrast: clamp(value.contrast ?? 100, 0, 200),
     zoom: clamp(value.zoom ?? 1, 1, 4),
     panX: clamp(value.panX ?? 0, -100, 100),
     panY: clamp(value.panY ?? 0, -100, 100),
@@ -81,7 +93,7 @@ export function isViewerCommand(value: unknown): value is ViewerCommand {
   if (typeof command.timestamp !== 'string' || !['show', 'transform', 'hide', 'window', 'reset-transform'].includes(String(command.type))) return false
   if (command.type === 'show') {
     const payload = command.payload as { image?: Record<string, unknown>; transform?: unknown } | undefined
-    return Boolean(payload?.image && Number.isInteger(payload.image.imageId) && Number.isInteger(payload.image.articleId) && typeof payload.image.url === 'string' && typeof payload.image.title === 'string' && payload.transform)
+    return Boolean(payload?.image && Number.isInteger(payload.image.imageId) && Number.isInteger(payload.image.articleId) && typeof payload.image.url === 'string' && typeof payload.image.title === 'string' && (typeof payload.image.source === 'string' || payload.image.source === null || payload.image.source === undefined) && payload.transform)
   }
   return command.type === 'hide' || command.type === 'reset-transform' || Boolean(command.payload && typeof command.payload === 'object')
 }
