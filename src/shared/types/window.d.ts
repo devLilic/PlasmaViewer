@@ -68,6 +68,8 @@ declare global {
       getState: () => Promise<ViewerState>
       setTransform: (value: ViewerTransform) => Promise<ViewerState>
       setWindow: (value: Partial<ViewerWindowSettings>) => Promise<ViewerState>
+      chooseDefaultImage: () => Promise<ViewerState>
+      clearDefaultImage: () => Promise<ViewerState>
       resetTransform: () => Promise<ViewerState>
       showOutput: () => Promise<ViewerState>
       hideOutput: () => Promise<ViewerState>

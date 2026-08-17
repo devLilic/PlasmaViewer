@@ -26,6 +26,8 @@ describe('ipc contracts', () => {
       'viewer:get-state',
       'viewer:set-transform',
       'viewer:set-window',
+      'viewer:choose-default-image',
+      'viewer:clear-default-image',
       'viewer:reset-transform',
       'viewer:show-output',
       'viewer:hide-output',

@@ -7,6 +7,8 @@ export function exposeViewerApi() {
     getState: () => ipcRenderer.invoke(ipcInvokeChannels.viewerGetState) as Promise<ViewerState>,
     setTransform: (value: ViewerTransform) => ipcRenderer.invoke(ipcInvokeChannels.viewerSetTransform, value) as Promise<ViewerState>,
     setWindow: (value: Partial<ViewerWindowSettings>) => ipcRenderer.invoke(ipcInvokeChannels.viewerSetWindow, value) as Promise<ViewerState>,
+    chooseDefaultImage: () => ipcRenderer.invoke(ipcInvokeChannels.viewerChooseDefaultImage) as Promise<ViewerState>,
+    clearDefaultImage: () => ipcRenderer.invoke(ipcInvokeChannels.viewerClearDefaultImage) as Promise<ViewerState>,
     resetTransform: () => ipcRenderer.invoke(ipcInvokeChannels.viewerResetTransform) as Promise<ViewerState>,
     showOutput: () => ipcRenderer.invoke(ipcInvokeChannels.viewerShowOutput) as Promise<ViewerState>,
     hideOutput: () => ipcRenderer.invoke(ipcInvokeChannels.viewerHideOutput) as Promise<ViewerState>,

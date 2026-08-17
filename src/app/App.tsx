@@ -5,6 +5,7 @@ import './App.css'
 const initial: ViewerState = {
   visible: false,
   activeImage: null,
+  defaultImage: null,
   transform: { brightness: 100, zoom: 1, panX: 0, panY: 0, flipX: false },
   window: { displayId: null, fullscreen: true, topmost: false },
   displays: [],
@@ -25,25 +26,55 @@ function App() {
 }
 
 function Output({ state }: { state: ViewerState }) {
-  if (!state.activeImage) return <main className="output" />
-  const transform = state.transform
   return (
-    <main className="output">
-      <img
-        key={state.activeImage.url}
-        src={state.activeImage.url}
-        alt="Imagine onAIR"
-        style={{
-          filter: `brightness(${transform.brightness}%)`,
-          transform: `translate(${transform.panX}%, ${transform.panY}%) scale(${transform.zoom}) scaleX(${transform.flipX ? -1 : 1})`,
-        }}
-      />
+    <main className="output" aria-label="Fereastră output FR2">
+      <ImageLayers state={state} />
     </main>
+  )
+}
+
+function ImageLayers({ state, preview = false }: { state: ViewerState; preview?: boolean }) {
+  const [loadedUrls, setLoadedUrls] = useState<Set<string>>(() => new Set())
+  const targetUrl = state.activeImage?.url ?? state.defaultImage?.url ?? null
+  const loading = Boolean(targetUrl && !loadedUrls.has(targetUrl))
+  const markLoaded = (url: string) => setLoadedUrls(current => new Set(current).add(url))
+
+  if (!state.defaultImage && !state.activeImage) {
+    return preview ? <div className="empty">Nicio imagine selectată din Plasma</div> : null
+  }
+
+  return (
+    <div className="image-layers" aria-busy={loading}>
+      {loading && <div className="viewer-image-loader" aria-hidden="true"><span /></div>}
+      {state.defaultImage && (
+        <img
+          className="default-image"
+          key={state.defaultImage.url}
+          src={state.defaultImage.url}
+          alt="Imagine implicită"
+          onLoad={() => markLoaded(state.defaultImage!.url)}
+          onError={() => markLoaded(state.defaultImage!.url)}
+        />
+      )}
+      {state.activeImage && (
+        <img
+          className="active-image"
+          key={state.activeImage.url}
+          src={state.activeImage.url}
+          alt="Imagine onAIR"
+          style={imageStyle(state.transform)}
+          onLoad={() => markLoaded(state.activeImage!.url)}
+          onError={() => markLoaded(state.activeImage!.url)}
+        />
+      )}
+    </div>
   )
 }
 
 function Control({ state }: { state: ViewerState }) {
   const updateTransform = (patch: Partial<ViewerTransform>) => window.viewerApi.setTransform({ ...state.transform, ...patch })
+  const canDisplay = Boolean(state.activeImage || state.defaultImage)
+
   return (
     <main className="control-shell">
       <header className="topbar">
@@ -53,14 +84,15 @@ function Control({ state }: { state: ViewerState }) {
 
       <section className="workspace">
         <div className="preview-card">
-          <div className="preview">
-            {state.activeImage ? <img src={state.activeImage.url} alt="Preview" style={imageStyle(state.transform)} /> : <div className="empty">Nicio imagine selectată din Plasma</div>}
-          </div>
+          <div className="preview"><ImageLayers state={state} preview /></div>
           <div className="preview-meta">
-            <div><strong>{state.activeImage?.title ?? 'Fără imagine'}</strong><small>{state.activeImage ? `Articol #${state.activeImage.articleId}` : 'Apasă onAIR în playlist'}</small></div>
+            <div>
+              <strong>{state.activeImage?.title ?? state.defaultImage?.name ?? 'Fără imagine'}</strong>
+              <small>{state.activeImage ? `Articol #${state.activeImage.articleId}` : state.defaultImage ? 'Imagine implicită FR2' : 'Apasă onAIR în playlist'}</small>
+            </div>
             <div className="actions">
-              <button className="secondary" disabled={!state.activeImage} onClick={() => window.viewerApi.hideOutput()}>Ascunde</button>
-              <button className="primary" disabled={!state.activeImage} onClick={() => window.viewerApi.showOutput()}>Afișează</button>
+              <button className="secondary" disabled={!state.visible} onClick={() => window.viewerApi.hideOutput()}>Ascunde</button>
+              <button className="primary" disabled={!canDisplay} onClick={() => window.viewerApi.showOutput()}>Afișează</button>
             </div>
           </div>
         </div>
@@ -74,7 +106,16 @@ function Control({ state }: { state: ViewerState }) {
           <Toggle label="Întotdeauna deasupra" checked={state.window.topmost} onChange={checked => window.viewerApi.setWindow({ topmost: checked })} />
 
           <div className="divider" />
-          <h2>Ajustări imagine</h2>
+          <h2>Imagine implicită FR2</h2>
+          <p className="default-image-name">{state.defaultImage?.name ?? 'Nicio imagine configurată'}</p>
+          <div className="default-image-actions">
+            <button className="secondary" onClick={() => window.viewerApi.chooseDefaultImage()}>Alege imaginea</button>
+            <button className="danger" disabled={!state.defaultImage} onClick={() => window.viewerApi.clearDefaultImage()}>Elimină</button>
+          </div>
+          <p className="hint">Imaginea implicită rămâne fixă în fundal. Ajustările de mai jos se aplică numai imaginii primite din plasma.test.</p>
+
+          <div className="divider" />
+          <h2>Ajustări imagine plasma.test</h2>
           <Range label="Luminozitate" value={state.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateTransform({ brightness })} />
           <Range label="Zoom" value={state.transform.zoom} min={1} max={4} step={0.01} unit="×" onChange={zoom => updateTransform({ zoom })} />
           <Range label="Poziție X" value={state.transform.panX} min={-100} max={100} unit="%" onChange={panX => updateTransform({ panX })} />
@@ -97,7 +138,10 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 }
 
 function imageStyle(transform: ViewerTransform) {
-  return { filter: `brightness(${transform.brightness}%)`, transform: `translate(${transform.panX}%, ${transform.panY}%) scale(${transform.zoom}) scaleX(${transform.flipX ? -1 : 1})` }
+  return {
+    filter: `brightness(${transform.brightness}%)`,
+    transform: `translate(${transform.panX}%, ${transform.panY}%) scale(${transform.zoom}) scaleX(${transform.flipX ? -1 : 1})`,
+  }
 }
 
 export default App

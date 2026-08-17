@@ -32,6 +32,8 @@ export const ipcInvokeChannels = {
   viewerGetState: 'viewer:get-state',
   viewerSetTransform: 'viewer:set-transform',
   viewerSetWindow: 'viewer:set-window',
+  viewerChooseDefaultImage: 'viewer:choose-default-image',
+  viewerClearDefaultImage: 'viewer:clear-default-image',
   viewerResetTransform: 'viewer:reset-transform',
   viewerShowOutput: 'viewer:show-output',
   viewerHideOutput: 'viewer:hide-output',
@@ -182,6 +184,8 @@ export interface IpcInvokeContract {
   [ipcInvokeChannels.viewerGetState]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerSetTransform]: { request: ViewerTransform; response: ViewerState }
   [ipcInvokeChannels.viewerSetWindow]: { request: Partial<ViewerWindowSettings>; response: ViewerState }
+  [ipcInvokeChannels.viewerChooseDefaultImage]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerClearDefaultImage]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerResetTransform]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerShowOutput]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerHideOutput]: { request: void; response: ViewerState }

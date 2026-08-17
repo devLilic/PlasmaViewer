@@ -1,8 +1,9 @@
-import { app, BrowserWindow, net, screen } from 'electron'
+import { app, BrowserWindow, dialog, nativeImage, net, screen, type OpenDialogOptions } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { createSecureBrowserWindow } from '../security/windowFactory'
 import { indexHtmlPath, VITE_DEV_SERVER_URL } from '../bootstrap/paths'
 import { createViewerStateStore } from './viewerStateStore'
+import { describeViewerDefaultImage, registerViewerBackgroundProtocol } from './viewerBackgroundProtocol'
 import {
   defaultViewerTransform,
   normalizeTransform,
@@ -24,19 +25,24 @@ export class ViewerController {
   private outputWindow: BrowserWindow | null = null
   private readonly processedCommands = new Set<string>()
   private readonly store = createViewerStateStore(app.getPath('userData'))
+  private defaultImagePath: string | null
   private state: ViewerState
 
   constructor() {
     const persisted = this.store.read()
+    const defaultImage = describeViewerDefaultImage(persisted.defaultImagePath)
+    this.defaultImagePath = defaultImage ? persisted.defaultImagePath : null
     this.state = {
       visible: false,
       activeImage: null,
+      defaultImage,
       transform: defaultViewerTransform,
       window: persisted.window,
       displays: [],
       lastCommandId: null,
       error: null,
     }
+    registerViewerBackgroundProtocol(() => this.defaultImagePath)
   }
 
   async createWindows() {
@@ -53,6 +59,7 @@ export class ViewerController {
       title: 'PlasmaViewer Output',
       show: false,
       frame: false,
+      movable: true,
       resizable: true,
       backgroundColor: '#000000',
       skipTaskbar: false,
@@ -68,7 +75,7 @@ export class ViewerController {
     this.outputWindow.on('closed', () => { this.outputWindow = null })
 
     await Promise.all([this.loadView(this.controlWindow, 'control'), this.loadView(this.outputWindow, 'output')])
-    this.applyWindowSettings(this.state.window)
+    this.applyWindowSettings(this.state.window, true)
     this.broadcast()
     return this.controlWindow
   }
@@ -93,7 +100,8 @@ export class ViewerController {
       this.hide()
     } else if (command.type === 'window') {
       this.state.window = { ...this.state.window, ...command.payload }
-      this.applyWindowSettings(this.state.window)
+      const shouldReposition = command.payload.displayId !== undefined || command.payload.fullscreen !== undefined
+      this.applyWindowSettings(this.state.window, shouldReposition)
     } else if (command.type === 'reset-transform') {
       this.state.transform = defaultViewerTransform
     }
@@ -113,13 +121,48 @@ export class ViewerController {
     return this.execute({ id: randomUUID(), version: 1, timestamp: new Date().toISOString(), type: 'window', payload: settings })
   }
 
+  async chooseDefaultImage() {
+    const options: OpenDialogOptions = {
+      title: 'Selectează imaginea implicită pentru FR2',
+      properties: ['openFile'],
+      filters: [{ name: 'Imagini', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }],
+    }
+    const result = this.controlWindow
+      ? await dialog.showOpenDialog(this.controlWindow, options)
+      : await dialog.showOpenDialog(options)
+    if (result.canceled || !result.filePaths[0]) return this.getState()
+
+    const imagePath = result.filePaths[0]
+    if (nativeImage.createFromPath(imagePath).isEmpty()) {
+      this.state.error = 'Fișierul selectat nu este o imagine validă.'
+      this.broadcast()
+      return this.getState()
+    }
+
+    this.defaultImagePath = imagePath
+    this.state.defaultImage = describeViewerDefaultImage(imagePath)
+    this.state.error = null
+    this.persist()
+    this.broadcast()
+    return this.getState()
+  }
+
+  clearDefaultImage() {
+    this.defaultImagePath = null
+    this.state.defaultImage = null
+    this.state.error = null
+    this.persist()
+    this.broadcast()
+    return this.getState()
+  }
+
   resetTransform() {
     return this.execute({ id: randomUUID(), version: 1, timestamp: new Date().toISOString(), type: 'reset-transform' })
   }
 
   showOutput() {
-    if (!this.outputWindow || !this.state.activeImage) return this.getState()
-    this.applyWindowSettings(this.state.window)
+    if (!this.outputWindow || (!this.state.activeImage && !this.state.defaultImage)) return this.getState()
+    this.applyWindowSettings(this.state.window, false)
     this.outputWindow.showInactive()
     if (this.state.window.topmost) this.outputWindow.moveTop()
     this.state.visible = true
@@ -159,13 +202,15 @@ export class ViewerController {
     }
   }
 
-  private applyWindowSettings(settings: ViewerWindowSettings) {
+  private applyWindowSettings(settings: ViewerWindowSettings, reposition = false) {
     if (!this.outputWindow) return
     this.refreshDisplays()
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
     this.outputWindow.setAlwaysOnTop(settings.topmost, settings.topmost ? 'screen-saver' : 'normal')
     this.outputWindow.setFullScreen(false)
-    this.outputWindow.setBounds(settings.fullscreen ? display.bounds : centeredBounds(display.workArea))
+    this.outputWindow.setMovable(!settings.fullscreen)
+    if (settings.fullscreen) this.outputWindow.setBounds(display.bounds)
+    else if (reposition) this.outputWindow.setBounds(centeredBounds(display.workArea))
     this.outputWindow.setFullScreen(settings.fullscreen)
   }
 
@@ -179,7 +224,7 @@ export class ViewerController {
   }
 
   private persist() {
-    this.store.write({ window: this.state.window })
+    this.store.write({ window: this.state.window, defaultImagePath: this.defaultImagePath })
   }
 
   private rememberCommand(id: string) {

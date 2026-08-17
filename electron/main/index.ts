@@ -8,9 +8,11 @@ import { applyAppSecurity } from './security/appSecurity'
 import { ipcInvokeChannels } from '../../src/shared/ipc/contracts'
 import { markViewerQuitting, ViewerController } from './viewer/viewerController'
 import { startViewerHttpServer } from './viewer/viewerHttpServer'
+import { registerViewerBackgroundScheme } from './viewer/viewerBackgroundProtocol'
 
 const config = loadConfig()
 
+registerViewerBackgroundScheme()
 applyAppSecurity()
 bootstrapAppProtection(config)
 registerSingleInstance()
@@ -47,6 +49,8 @@ function registerViewerIpc(controller: ViewerController) {
   ipcMain.handle(ipcInvokeChannels.viewerGetState, () => controller.getState())
   ipcMain.handle(ipcInvokeChannels.viewerSetTransform, (_event, value) => controller.updateTransform(value))
   ipcMain.handle(ipcInvokeChannels.viewerSetWindow, (_event, value) => controller.updateWindow(value))
+  ipcMain.handle(ipcInvokeChannels.viewerChooseDefaultImage, () => controller.chooseDefaultImage())
+  ipcMain.handle(ipcInvokeChannels.viewerClearDefaultImage, () => controller.clearDefaultImage())
   ipcMain.handle(ipcInvokeChannels.viewerResetTransform, () => controller.resetTransform())
   ipcMain.handle(ipcInvokeChannels.viewerShowOutput, () => controller.showOutput())
   ipcMain.handle(ipcInvokeChannels.viewerHideOutput, () => controller.hide())

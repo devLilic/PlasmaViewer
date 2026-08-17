@@ -29,9 +29,15 @@ export interface ViewerWindowSettings {
   topmost: boolean
 }
 
+export interface ViewerDefaultImage {
+  name: string
+  url: string
+}
+
 export interface ViewerState {
   visible: boolean
   activeImage: ViewerImage | null
+  defaultImage: ViewerDefaultImage | null
   transform: ViewerTransform
   window: ViewerWindowSettings
   displays: ViewerDisplay[]

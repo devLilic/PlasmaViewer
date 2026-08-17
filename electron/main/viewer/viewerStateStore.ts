@@ -4,10 +4,12 @@ import type { ViewerWindowSettings } from '../../../src/shared/viewer/contracts'
 
 export interface PersistedViewerState {
   window: ViewerWindowSettings
+  defaultImagePath: string | null
 }
 
 const defaults: PersistedViewerState = {
   window: { displayId: null, fullscreen: true, topmost: false },
+  defaultImagePath: null,
 }
 
 export function createViewerStateStore(storageDir: string) {
@@ -18,6 +20,7 @@ export function createViewerStateStore(storageDir: string) {
         const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as Partial<PersistedViewerState>
         return {
           window: { ...defaults.window, ...parsed.window },
+          defaultImagePath: typeof parsed.defaultImagePath === 'string' ? parsed.defaultImagePath : null,
         }
       } catch {
         return defaults

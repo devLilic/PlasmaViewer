@@ -18,3 +18,10 @@ Image transforms belong to the currently displayed image. They are not persisted
 as application settings and a newly opened Plasma dialog starts from the default
 transform (brightness 100, zoom 1, centered, no flip). Window/display settings
 remain persistent. `reset-transform` applies the defaults immediately.
+
+The control window (FR1) can configure a persistent local default image. The
+output window (FR2) renders this image as a fixed background and renders the
+image received from `plasma.test` in a separate layer above it. Transform
+commands affect only the `plasma.test` layer. The default image can be selected
+or removed only through FR1; the HTTP protocol exposes its descriptor in state
+but cannot change its local file path.
