@@ -58,6 +58,14 @@ function ImageLayers({ state, preview = false }: { state: ViewerState; preview?:
   return (
     <div className="image-layers" aria-busy={loading}>
       {loading && <div className="viewer-image-loader" aria-hidden="true"><span /></div>}
+      {state.defaultImage && (
+        <img
+          className="default-image"
+          src={state.defaultImage.url}
+          alt="Imagine implicită"
+          style={defaultImageStyle(state)}
+        />
+      )}
       {state.activeImage && (
         <img
           className="active-image"
@@ -178,8 +186,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
 
 function Background({ state }: { state: ViewerState }) {
   if (!state.defaultImage) return <main className="output" aria-label="Fereastră fundal FR3" />
-  const { brightness, contrast, saturation } = state.fr3.transform
-  return <main className="output" aria-label="Fereastră fundal FR3"><img className="default-image" src={state.defaultImage.url} alt="Imagine implicită FR3" style={{ filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)` }} /></main>
+  return <main className="output" aria-label="Fereastră fundal FR3"><img className="default-image" src={state.defaultImage.url} alt="Imagine implicită FR3" style={defaultImageStyle(state)} /></main>
 }
 
 function Settings({ state, hidden, page, onNavigate }: { state: ViewerState; hidden: boolean; page: 'control' | 'settings'; onNavigate: (page: 'control' | 'settings') => void }) {
@@ -283,6 +290,11 @@ function imageStyle(transform: ViewerTransform) {
     filter: `brightness(${transform.brightness}%) contrast(${transform.contrast}%) saturate(${transform.saturation}%)`,
     transform: `translate(${transform.panX}%, ${transform.panY}%) scale(${transform.zoom}) scaleX(${transform.flipX ? -1 : 1})`,
   }
+}
+
+function defaultImageStyle(state: ViewerState) {
+  const { brightness, contrast, saturation } = state.fr3.transform
+  return { filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)` }
 }
 
 function pickDefaults(state: ViewerState): ViewerTransformDefaults {
