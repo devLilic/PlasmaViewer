@@ -55,6 +55,7 @@ export interface ViewerTransformDefaults {
 export interface ViewerFr3Settings {
   enabled: boolean
   visible: boolean
+  transform: ViewerTransformDefaults
 }
 
 export interface ViewerState {

@@ -11,12 +11,12 @@ describe('viewer state store', () => {
       window: { displayId: '3', fullscreen: false, topmost: true, bounds: { x: 120, y: 80, width: 1280, height: 720 }, aspectMode: '16:9' },
       defaultImagePath: 'C:\\Media\\fundal.jpg',
       transformDefaults: { brightness: 110, contrast: 90, saturation: 130 },
-      fr3: { enabled: true, visible: true },
+      fr3: { enabled: true, visible: true, transform: { brightness: 100, contrast: 100, saturation: 100 } },
     })
     expect(store.read().window).toEqual({ displayId: '3', fullscreen: false, topmost: true, bounds: { x: 120, y: 80, width: 1280, height: 720 }, aspectMode: '16:9' })
     expect(store.read().defaultImagePath).toBe('C:\\Media\\fundal.jpg')
     expect(store.read().transformDefaults).toEqual({ brightness: 110, contrast: 90, saturation: 130 })
-    expect(store.read().fr3).toEqual({ enabled: true, visible: false })
+    expect(store.read().fr3).toEqual({ enabled: true, visible: false, transform: { brightness: 100, contrast: 100, saturation: 100 } })
   })
 
   it('migrates settings created before default images were supported', () => {
@@ -44,6 +44,6 @@ describe('viewer state store', () => {
     expect(state.window.aspectMode).toBe('free')
     expect(state.window.bounds).toBeNull()
     expect(state.transformDefaults).toEqual({ brightness: 100, contrast: 0, saturation: 200 })
-    expect(state.fr3).toEqual({ enabled: true, visible: false })
+    expect(state.fr3).toEqual({ enabled: true, visible: false, transform: { brightness: 100, contrast: 100, saturation: 100 } })
   })
 })

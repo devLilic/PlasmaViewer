@@ -13,7 +13,7 @@ const defaults: PersistedViewerState = {
   window: { displayId: null, fullscreen: true, topmost: false, bounds: null, aspectMode: 'free' },
   defaultImagePath: null,
   transformDefaults: { brightness: 100, contrast: 100, saturation: 100 },
-  fr3: { enabled: false, visible: false },
+  fr3: { enabled: false, visible: false, transform: { brightness: 100, contrast: 100, saturation: 100 } },
 }
 
 export function createViewerStateStore(storageDir: string) {
@@ -48,7 +48,7 @@ function normalizeTransformDefaults(value: unknown): ViewerTransformDefaults {
 function normalizeFr3(value: unknown): ViewerFr3Settings {
   if (!value || typeof value !== 'object') return defaults.fr3
   const settings = value as Partial<ViewerFr3Settings>
-  return { enabled: Boolean(settings.enabled), visible: false }
+  return { enabled: Boolean(settings.enabled), visible: false, transform: normalizeTransformDefaults(settings.transform) }
 }
 
 function normalizeAspectMode(value: unknown): ViewerWindowSettings['aspectMode'] {

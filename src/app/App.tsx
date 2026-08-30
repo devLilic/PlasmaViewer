@@ -9,7 +9,7 @@ const initial: ViewerState = {
   transform: { brightness: 100, contrast: 100, saturation: 100, zoom: 1, panX: 0, panY: 0, flipX: false },
   transformDefaults: { brightness: 100, contrast: 100, saturation: 100, zoom: 1, panX: 0, panY: 0, flipX: false },
   window: { displayId: null, fullscreen: true, topmost: false, bounds: null, aspectMode: 'free' },
-  fr3: { enabled: false, visible: false },
+  fr3: { enabled: false, visible: false, transform: { brightness: 100, contrast: 100, saturation: 100 } },
   displays: [],
   lastCommandId: null,
   error: null,
@@ -25,7 +25,8 @@ function App() {
     return window.viewerApi.onStateChanged(setState)
   }, [])
 
-  return isOutput ? <Output state={state} /> : <><Navigation page={page} onChange={setPage} /><Control state={state} hidden={page !== 'control'} /><Settings state={state} hidden={page !== 'settings'} /></>
+  const isFr3 = useMemo(() => new URLSearchParams(window.location.search).get('view') === 'fr3', [])
+  return isOutput ? <Output state={state} /> : isFr3 ? <Background state={state} /> : <><Navigation page={page} onChange={setPage} /><Control state={state} hidden={page !== 'control'} /><Settings state={state} hidden={page !== 'settings'} /></>
 }
 
 function Navigation({ page, onChange }: { page: 'control' | 'settings'; onChange: (page: 'control' | 'settings') => void }) {
@@ -42,27 +43,17 @@ function Output({ state }: { state: ViewerState }) {
 
 function ImageLayers({ state, preview = false }: { state: ViewerState; preview?: boolean }) {
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(() => new Set())
-  const targetUrl = state.activeImage?.url ?? state.defaultImage?.url ?? null
+  const targetUrl = state.activeImage?.url ?? null
   const loading = Boolean(targetUrl && !loadedUrls.has(targetUrl))
   const markLoaded = (url: string) => setLoadedUrls(current => new Set(current).add(url))
 
-  if (!state.defaultImage && !state.activeImage) {
+  if (!state.activeImage) {
     return preview ? <div className="empty">Nicio imagine selectată din Plasma</div> : null
   }
 
   return (
     <div className="image-layers" aria-busy={loading}>
       {loading && <div className="viewer-image-loader" aria-hidden="true"><span /></div>}
-      {state.defaultImage && (
-        <img
-          className="default-image"
-          key={state.defaultImage.url}
-          src={state.defaultImage.url}
-          alt="Imagine implicită"
-          onLoad={() => markLoaded(state.defaultImage!.url)}
-          onError={() => markLoaded(state.defaultImage!.url)}
-        />
-      )}
       {state.activeImage && (
         <img
           className="active-image"
@@ -80,7 +71,7 @@ function ImageLayers({ state, preview = false }: { state: ViewerState; preview?:
 
 function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
   const updateTransform = (patch: Partial<ViewerTransform>) => window.viewerApi.setTransform({ ...state.transform, ...patch })
-  const canDisplay = Boolean(state.activeImage || state.defaultImage)
+  const canDisplay = Boolean(state.activeImage)
 
   return (
     <main className="control-shell" hidden={hidden}>
@@ -94,8 +85,8 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
           <div className="preview"><ImageLayers state={state} preview /></div>
           <div className="preview-meta">
             <div>
-              <strong>{state.activeImage?.title ?? state.defaultImage?.name ?? 'Fără imagine'}</strong>
-              <small>{state.activeImage ? `Articol #${state.activeImage.articleId}` : state.defaultImage ? 'Imagine implicită FR2' : 'Apasă onAIR în playlist'}</small>
+              <strong>{state.activeImage?.title ?? 'Fără imagine'}</strong>
+              <small>{state.activeImage ? `Articol #${state.activeImage.articleId}` : 'Apasă onAIR în playlist'}</small>
               {state.activeImage && <small className="image-source">Sursă locală: {state.activeImage.source ?? 'Fișier local indisponibil'}</small>}
             </div>
             <div className="actions">
@@ -140,6 +131,12 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
   )
 }
 
+function Background({ state }: { state: ViewerState }) {
+  if (!state.defaultImage) return <main className="output" aria-label="Fereastră fundal FR3" />
+  const { brightness, contrast, saturation } = state.fr3.transform
+  return <main className="output" aria-label="Fereastră fundal FR3"><img className="default-image" src={state.defaultImage.url} alt="Imagine implicită FR3" style={{ filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)` }} /></main>
+}
+
 function Settings({ state, hidden }: { state: ViewerState; hidden: boolean }) {
   const [draft, setDraft] = useState<ViewerTransformDefaults>(pickDefaults(state))
   const [notice, setNotice] = useState<string | null>(null)
@@ -177,9 +174,13 @@ function Settings({ state, hidden }: { state: ViewerState; hidden: boolean }) {
           <button className="danger" disabled={!state.defaultImage} onClick={() => void window.viewerApi.clearDefaultImage().catch(error => setNotice(error instanceof Error ? error.message : 'Imaginea nu a putut fi eliminată.'))}>Elimină</button>
         </div>
         <p className="hint">Imaginea este salvată imediat după alegere și va fi utilizată de FR3 când fereastra va fi activată.</p>
+        <Toggle label="Activează FR3" checked={state.fr3.enabled} onChange={enabled => void window.viewerApi.setFr3({ enabled, transform: state.fr3.transform })} />
+        <Range label="Luminozitate FR3" value={state.fr3.transform.brightness} min={0} max={200} unit="%" onChange={brightness => void window.viewerApi.setFr3({ enabled: state.fr3.enabled, transform: { ...state.fr3.transform, brightness } })} />
+        <Range label="Contrast FR3" value={state.fr3.transform.contrast} min={0} max={200} unit="%" onChange={contrast => void window.viewerApi.setFr3({ enabled: state.fr3.enabled, transform: { ...state.fr3.transform, contrast } })} />
+        <Range label="Saturație FR3" value={state.fr3.transform.saturation} min={0} max={200} unit="%" onChange={saturation => void window.viewerApi.setFr3({ enabled: state.fr3.enabled, transform: { ...state.fr3.transform, saturation } })} />
 
         <div className="divider" />
-        <h2>Defaulturi imagine</h2>
+        <h2>Defaulturi FR2 pentru imagini onAIR</h2>
         <p className="hint">Se aplică la resetare și pentru inițializările următoare; nu modifică imaginea onAIR curentă.</p>
         <Range label="Luminozitate" value={draft.brightness} min={0} max={200} unit="%" onChange={brightness => setDraft(current => ({ ...current, brightness }))} />
         <Range label="Contrast" value={draft.contrast} min={0} max={200} unit="%" onChange={contrast => setDraft(current => ({ ...current, contrast }))} />

@@ -25,6 +25,7 @@ export function markViewerQuitting() {
 export class ViewerController {
   private controlWindow: BrowserWindow | null = null
   private outputWindow: BrowserWindow | null = null
+  private fr3Window: BrowserWindow | null = null
   private readonly processedCommands = new Set<string>()
   private readonly store = createViewerStateStore(app.getPath('userData'))
   private defaultImagePath: string | null
@@ -69,6 +70,11 @@ export class ViewerController {
       backgroundColor: '#000000',
       skipTaskbar: false,
     })
+    this.fr3Window = createSecureBrowserWindow({
+      title: 'PlasmaViewer Background', show: false, frame: false, movable: false, resizable: false,
+      focusable: false, skipTaskbar: true, backgroundColor: '#000000',
+    })
+    this.fr3Window.setIgnoreMouseEvents(true)
 
     this.outputWindow.on('close', (event) => {
       if (!viewerIsQuitting) {
@@ -78,11 +84,13 @@ export class ViewerController {
     })
     this.controlWindow.on('closed', () => { this.controlWindow = null })
     this.outputWindow.on('closed', () => { this.outputWindow = null })
+    this.fr3Window.on('closed', () => { this.fr3Window = null })
     this.outputWindow.on('move', () => this.rememberOutputBounds())
     this.outputWindow.on('resize', () => this.rememberOutputBounds())
 
-    await Promise.all([this.loadView(this.controlWindow, 'control'), this.loadView(this.outputWindow, 'output')])
+    await Promise.all([this.loadView(this.controlWindow, 'control'), this.loadView(this.outputWindow, 'output'), this.loadView(this.fr3Window, 'fr3')])
     this.applyWindowSettings(this.state.window, true)
+    this.applyFr3Settings()
     this.broadcast()
     return this.controlWindow
   }
@@ -113,6 +121,7 @@ export class ViewerController {
       }
       const shouldReposition = command.payload.displayId !== undefined || command.payload.fullscreen !== undefined || command.payload.bounds !== undefined
       this.applyWindowSettings(this.state.window, shouldReposition)
+      this.applyFr3Settings()
     } else if (command.type === 'reset-transform') {
       this.state.transform = this.state.transformDefaults
     }
@@ -130,6 +139,14 @@ export class ViewerController {
 
   updateTransformDefaults(defaults: ViewerTransformDefaults) {
     this.state.transformDefaults = createTransformDefaults(defaults)
+    this.persist()
+    this.broadcast()
+    return this.getState()
+  }
+
+  updateFr3(value: Pick<ViewerState['fr3'], 'enabled' | 'transform'>) {
+    this.state.fr3 = { ...this.state.fr3, enabled: Boolean(value.enabled), transform: createTransformDefaults(value.transform), visible: false }
+    this.applyFr3Settings()
     this.persist()
     this.broadcast()
     return this.getState()
@@ -161,6 +178,7 @@ export class ViewerController {
     this.state.defaultImage = describeViewerDefaultImage(imagePath)
     this.state.error = null
     this.persist()
+    this.applyFr3Settings()
     this.broadcast()
     return this.getState()
   }
@@ -170,6 +188,7 @@ export class ViewerController {
     this.state.defaultImage = null
     this.state.error = null
     this.persist()
+    this.applyFr3Settings()
     this.broadcast()
     return this.getState()
   }
@@ -195,7 +214,7 @@ export class ViewerController {
     return this.getState()
   }
 
-  private async loadView(window: BrowserWindow, view: 'control' | 'output') {
+  private async loadView(window: BrowserWindow, view: 'control' | 'output' | 'fr3') {
     if (VITE_DEV_SERVER_URL) {
       const url = new URL(VITE_DEV_SERVER_URL)
       url.searchParams.set('view', view)
@@ -249,6 +268,7 @@ export class ViewerController {
     if (sameBounds(this.state.window.bounds, bounds)) return
     this.state.window.bounds = bounds
     this.persist()
+    this.applyFr3Settings()
     this.broadcast()
   }
 
@@ -269,6 +289,19 @@ export class ViewerController {
     }, fr3: { ...this.state.fr3, visible: false } })
   }
 
+  private applyFr3Settings() {
+    if (!this.fr3Window) return
+    const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
+    this.fr3Window.setBounds(display.bounds)
+    const shouldShow = this.state.fr3.enabled && Boolean(this.state.defaultImage)
+    if (shouldShow) {
+      this.fr3Window.showInactive()
+      this.fr3Window.moveTop()
+      if (this.outputWindow?.isVisible()) this.outputWindow.moveTop()
+    } else this.fr3Window.hide()
+    this.state.fr3.visible = shouldShow
+  }
+
   private rememberCommand(id: string) {
     this.processedCommands.add(id)
     if (this.processedCommands.size > 100) this.processedCommands.delete(this.processedCommands.values().next().value as string)
@@ -276,7 +309,7 @@ export class ViewerController {
 
   private broadcast() {
     const snapshot = this.getState()
-    for (const window of [this.controlWindow, this.outputWindow]) {
+    for (const window of [this.controlWindow, this.outputWindow, this.fr3Window]) {
       if (window && !window.isDestroyed()) window.webContents.send(viewerEventChannel, snapshot)
     }
   }

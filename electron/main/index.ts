@@ -49,6 +49,7 @@ function registerViewerIpc(controller: ViewerController) {
   ipcMain.handle(ipcInvokeChannels.viewerGetState, () => controller.getState())
   ipcMain.handle(ipcInvokeChannels.viewerSetTransform, (_event, value) => controller.updateTransform(value))
   ipcMain.handle(ipcInvokeChannels.viewerSetTransformDefaults, (_event, value) => controller.updateTransformDefaults(value))
+  ipcMain.handle(ipcInvokeChannels.viewerSetFr3, (_event, value) => controller.updateFr3(value))
   ipcMain.handle(ipcInvokeChannels.viewerSetWindow, (_event, value) => controller.updateWindow(value))
   ipcMain.handle(ipcInvokeChannels.viewerChooseDefaultImage, () => controller.chooseDefaultImage())
   ipcMain.handle(ipcInvokeChannels.viewerClearDefaultImage, () => controller.clearDefaultImage())
