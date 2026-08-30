@@ -123,7 +123,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
         <Brand />
         <Navigation page={page} onChange={onNavigate} />
         <div className="header-actions">
-          <span className={`status ${state.visible ? 'live' : ''}`}><i /><span>{state.visible ? 'onAIR' : 'OFF AIR'}</span></span>
+          <button className={`onair-control ${state.visible ? 'live' : ''}`} disabled={!state.visible} onClick={() => void window.viewerApi.hideOutput()} aria-label="Oprește afișarea onAIR"><i /><span>{state.visible ? 'ON AIR' : 'OFF AIR'}</span>{state.visible && <b>OPREȘTE</b>}</button>
           <div className="output-menu">
             <button className="menu-trigger" aria-label="Setări fereastră output">Output <span aria-hidden="true">•••</span></button>
             <div className="output-menu-panel">
