@@ -6,11 +6,11 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 
 | Câmp | Valoare |
 |---|---|
-| Task activ | [PV-005 — Reordonare controale și 16:9 FR2](task-briefs/PV-005.md) |
+| Task activ | [PV-006 — Ajustare FR2 din tastatură](task-briefs/PV-006.md) |
 | Status | In progress |
-| Obiectiv | Reordonarea controalelor FR1 și blocarea dimensiunii FR2 la 16:9. |
+| Obiectiv | Ajustarea poziției și dimensiunii FR2 din tastatură. |
 | Blocaj | Niciunul cunoscut. |
-| Următorul task eligibil | PV-005 este activ. |
+| Următorul task eligibil | PV-006 este activ. |
 
 ## Registru taskuri
 
@@ -20,8 +20,8 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 | [PV-002](task-briefs/PV-002.md) | Completed | PV-001 | Pagina Settings din FR1 pentru imaginea FR3 și defaulturile de imagine. |
 | [PV-003](task-briefs/PV-003.md) | Completed | PV-002 | Saturație completă și sincronizarea defaulturilor cu `plasma.test`. |
 | [PV-004](task-briefs/PV-004.md) | Completed | PV-002 | Fereastra fullscreen FR3 și controlul ei persistent. |
-| [PV-005](task-briefs/PV-005.md) | In progress | PV-004 | Reordonarea controalelor FR1 și blocarea dimensiunii FR2 la 16:9. |
-| [PV-006](task-briefs/PV-006.md) | Pending | PV-005 | Ajustarea poziției și dimensiunii FR2 din tastatură. |
+| [PV-005](task-briefs/PV-005.md) | Completed | PV-004 | Reordonarea controalelor FR1 și blocarea dimensiunii FR2 la 16:9. |
+| [PV-006](task-briefs/PV-006.md) | In progress | PV-005 | Ajustarea poziției și dimensiunii FR2 din tastatură. |
 | [PV-007](task-briefs/PV-007.md) | Pending | PV-003, PV-004, PV-005, PV-006 | Verificare integrată, build și documentație finală. |
 
 ## Ordine obligatorie

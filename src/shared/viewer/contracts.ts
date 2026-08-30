@@ -46,6 +46,12 @@ export interface ViewerDefaultImage {
   url: string
 }
 
+export type ViewerBoundsDimension = 'width' | 'height'
+
+export type ViewerWindowUpdate = Partial<ViewerWindowSettings> & {
+  boundsChangedDimension?: ViewerBoundsDimension
+}
+
 export interface ViewerTransformDefaults {
   brightness: number
   contrast: number
@@ -90,6 +96,51 @@ export function resolveViewerDisplayId(displays: ViewerDisplay[], requestedDispl
   return displays.find((display) => !display.primary)?.id ?? displays.find((display) => display.primary)?.id ?? null
 }
 
+export function normalizeViewerWindowBounds(
+  bounds: ViewerWindowBounds | null,
+  workArea: ViewerWindowBounds,
+  aspectMode: ViewerWindowSettings['aspectMode'],
+  changedDimension: ViewerBoundsDimension = 'width',
+): ViewerWindowBounds {
+  const requested = bounds ?? centeredViewerWindowBounds(workArea)
+  const maxWidth = aspectMode === '16:9'
+    ? Math.min(workArea.width, Math.floor((workArea.height + 0.5) * 16 / 9))
+    : workArea.width
+  const maxHeight = workArea.height
+
+  let width: number
+  let height: number
+  if (aspectMode === '16:9') {
+    const requestedWidth = changedDimension === 'height'
+      ? Math.round(requested.height * 16 / 9)
+      : requested.width
+    width = clampDimension(requestedWidth, 320, maxWidth)
+    height = Math.round(width * 9 / 16)
+  } else {
+    width = clampDimension(requested.width, 320, maxWidth)
+    height = clampDimension(requested.height, 180, maxHeight)
+  }
+
+  const x = Math.min(Math.max(requested.x, workArea.x), workArea.x + workArea.width - width)
+  const y = Math.min(Math.max(requested.y, workArea.y), workArea.y + workArea.height - height)
+  return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) }
+}
+
+function centeredViewerWindowBounds(workArea: ViewerWindowBounds): ViewerWindowBounds {
+  const width = Math.min(1280, workArea.width)
+  const height = Math.min(720, workArea.height)
+  return {
+    x: workArea.x + Math.round((workArea.width - width) / 2),
+    y: workArea.y + Math.round((workArea.height - height) / 2),
+    width,
+    height,
+  }
+}
+
+function clampDimension(value: number, minimum: number, maximum: number) {
+  return Math.min(Math.max(minimum, Math.round(value)), maximum)
+}
+
 export function createTransformDefaults(defaults: Partial<ViewerTransformDefaults> = {}): ViewerTransform {
   return normalizeTransform({ ...defaults, zoom: 1, panX: 0, panY: 0, flipX: false })
 }
@@ -98,7 +149,7 @@ export type ViewerCommand =
   | { id: string; version: 1; timestamp: string; type: 'show'; payload: { image: ViewerImage; transform: Partial<ViewerTransform> } }
   | { id: string; version: 1; timestamp: string; type: 'transform'; payload: Partial<ViewerTransform> }
   | { id: string; version: 1; timestamp: string; type: 'hide'; payload?: Record<string, never> }
-  | { id: string; version: 1; timestamp: string; type: 'window'; payload: Partial<ViewerWindowSettings> }
+  | { id: string; version: 1; timestamp: string; type: 'window'; payload: ViewerWindowUpdate }
   | { id: string; version: 1; timestamp: string; type: 'reset-transform'; payload?: Record<string, never> }
 
 export function normalizeTransform(value: Partial<ViewerTransform>): ViewerTransform {

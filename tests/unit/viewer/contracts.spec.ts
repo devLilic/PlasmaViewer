@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTransformDefaults, isViewerCommand, normalizeTransform, resolveViewerDisplayId, shouldShowFr3 } from '../../../src/shared/viewer/contracts'
+import { createTransformDefaults, isViewerCommand, normalizeTransform, normalizeViewerWindowBounds, resolveViewerDisplayId, shouldShowFr3 } from '../../../src/shared/viewer/contracts'
 
 describe('PlasmaViewer protocol', () => {
   it('clamps transforms to safe ranges', () => {
@@ -48,5 +48,18 @@ describe('PlasmaViewer protocol', () => {
     expect(resolveViewerDisplayId(displays, 'secondary')).toBe('secondary')
     expect(resolveViewerDisplayId(displays, 'disconnected')).toBe('secondary')
     expect(resolveViewerDisplayId([{ ...displays[0] }], 'disconnected')).toBe('primary')
+  })
+
+  it('normalizes 16:9 bounds for activation, width and height edits', () => {
+    const workArea = { x: 0, y: 0, width: 1920, height: 1080 }
+    expect(normalizeViewerWindowBounds({ x: 30, y: 40, width: 1280, height: 800 }, workArea, '16:9')).toEqual({ x: 30, y: 40, width: 1280, height: 720 })
+    expect(normalizeViewerWindowBounds({ x: 30, y: 40, width: 1000, height: 720 }, workArea, '16:9', 'width')).toMatchObject({ width: 1000, height: 563 })
+    expect(normalizeViewerWindowBounds({ x: 30, y: 40, width: 1000, height: 600 }, workArea, '16:9', 'height')).toMatchObject({ width: 1067, height: 600 })
+  })
+
+  it('clamps locked bounds to the work area and leaves free bounds unconstrained by aspect ratio', () => {
+    const workArea = { x: 100, y: 50, width: 1000, height: 500 }
+    expect(normalizeViewerWindowBounds({ x: -50, y: -50, width: 1600, height: 900 }, workArea, '16:9')).toEqual({ x: 100, y: 50, width: 889, height: 500 })
+    expect(normalizeViewerWindowBounds({ x: -50, y: -50, width: 900, height: 400 }, workArea, 'free')).toEqual({ x: 100, y: 50, width: 900, height: 400 })
   })
 })

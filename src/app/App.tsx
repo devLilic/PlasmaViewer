@@ -103,16 +103,7 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
           </select></label>
           <Toggle label="Fullscreen" checked={state.window.fullscreen} onChange={checked => window.viewerApi.setWindow({ fullscreen: checked })} />
           <Toggle label="Întotdeauna deasupra" checked={state.window.topmost} onChange={checked => window.viewerApi.setWindow({ topmost: checked })} />
-
-          <div className="divider" />
-          <h2>Poziție și dimensiune FR2</h2>
-          <p className="hint">Aceste valori se aplică atunci când fullscreen este dezactivat și sunt păstrate după repornire.</p>
-          <div className="window-bounds">
-            <NumberField label="Stânga" value={state.window.bounds?.x ?? 0} onChange={x => updateWindowBounds(state, { x })} />
-            <NumberField label="Sus" value={state.window.bounds?.y ?? 0} onChange={y => updateWindowBounds(state, { y })} />
-            <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width })} />
-            <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height })} />
-          </div>
+          <Toggle label="Fixează 16:9" checked={state.window.aspectMode === '16:9'} onChange={checked => window.viewerApi.setWindow({ aspectMode: checked ? '16:9' : 'free' })} />
 
           <div className="divider" />
           <h2>Ajustări imagine plasma.test</h2>
@@ -124,6 +115,16 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
           <Range label="Poziție Y" value={state.transform.panY} min={-100} max={100} unit="%" onChange={panY => updateTransform({ panY })} />
           <Toggle label="Flip orizontal" checked={state.transform.flipX} onChange={flipX => updateTransform({ flipX })} />
           <button className="reset" onClick={() => window.viewerApi.resetTransform()}>Resetează ajustările</button>
+
+          <div className="divider" />
+          <h2>Poziție și dimensiune FR2</h2>
+          <p className="hint">Aceste valori se aplică atunci când fullscreen este dezactivat și sunt păstrate după repornire.</p>
+          <div className="window-bounds">
+            <NumberField label="Stânga" value={state.window.bounds?.x ?? 0} onChange={x => updateWindowBounds(state, { x })} />
+            <NumberField label="Sus" value={state.window.bounds?.y ?? 0} onChange={y => updateWindowBounds(state, { y })} />
+            <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width })} />
+            <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height })} />
+          </div>
         </aside>
       </section>
       {state.error && <div className="error">{state.error}</div>}
@@ -215,7 +216,8 @@ function NumberField({ label, value, min, onChange }: { label: string; value: nu
 
 function updateWindowBounds(state: ViewerState, patch: Partial<NonNullable<ViewerState['window']['bounds']>>) {
   const bounds = { x: 0, y: 0, width: 1280, height: 720, ...state.window.bounds, ...patch }
-  void window.viewerApi.setWindow({ bounds })
+  const boundsChangedDimension = Object.hasOwn(patch, 'height') ? 'height' : 'width'
+  void window.viewerApi.setWindow({ bounds, boundsChangedDimension })
 }
 
 function imageStyle(transform: ViewerTransform) {

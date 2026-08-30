@@ -6,6 +6,7 @@ import { createViewerStateStore } from './viewerStateStore'
 import { describeViewerDefaultImage, registerViewerBackgroundProtocol } from './viewerBackgroundProtocol'
 import {
   createTransformDefaults,
+  normalizeViewerWindowBounds,
   normalizeTransform,
   resolveViewerDisplayId,
   shouldShowFr3,
@@ -15,6 +16,7 @@ import {
   type ViewerTransformDefaults,
   type ViewerWindowBounds,
   type ViewerWindowSettings,
+  type ViewerWindowUpdate,
 } from '../../../src/shared/viewer/contracts'
 
 export const viewerEventChannel = 'viewer:state-changed'
@@ -120,13 +122,14 @@ export class ViewerController {
     } else if (command.type === 'hide') {
       this.hide()
     } else if (command.type === 'window') {
+      const { boundsChangedDimension: _boundsChangedDimension, ...windowUpdate } = command.payload
       this.state.window = {
         ...this.state.window,
-        ...command.payload,
-        bounds: command.payload.bounds === undefined ? this.state.window.bounds : command.payload.bounds,
+        ...windowUpdate,
+        bounds: windowUpdate.bounds === undefined ? this.state.window.bounds : windowUpdate.bounds,
       }
-      const shouldReposition = command.payload.displayId !== undefined || command.payload.fullscreen !== undefined || command.payload.bounds !== undefined
-      this.applyWindowSettings(this.state.window, shouldReposition)
+      const shouldReposition = windowUpdate.displayId !== undefined || windowUpdate.fullscreen !== undefined || windowUpdate.bounds !== undefined || windowUpdate.aspectMode !== undefined
+      this.applyWindowSettings(this.state.window, shouldReposition, command.payload.boundsChangedDimension)
       this.applyFr3Settings()
     } else if (command.type === 'reset-transform') {
       this.state.transform = this.state.transformDefaults
@@ -158,7 +161,7 @@ export class ViewerController {
     return this.getState()
   }
 
-  async updateWindow(settings: Partial<ViewerWindowSettings>) {
+  async updateWindow(settings: ViewerWindowUpdate) {
     return this.execute({ id: randomUUID(), version: 1, timestamp: new Date().toISOString(), type: 'window', payload: settings })
   }
 
@@ -243,7 +246,7 @@ export class ViewerController {
     this.state.window.displayId = resolveViewerDisplayId(this.state.displays, this.state.window.displayId)
   }
 
-  private applyWindowSettings(settings: ViewerWindowSettings, reposition = false) {
+  private applyWindowSettings(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width') {
     if (!this.outputWindow) return
     this.refreshDisplays()
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
@@ -258,7 +261,7 @@ export class ViewerController {
         return
       }
 
-      const bounds = normalizeBounds(settings.bounds, display.workArea)
+      const bounds = normalizeViewerWindowBounds(settings.bounds, display.workArea, settings.aspectMode, changedDimension)
       if (reposition || !sameBounds(this.outputWindow.getBounds(), bounds)) this.outputWindow.setBounds(bounds)
       this.state.window.bounds = bounds
     } finally {
@@ -268,7 +271,20 @@ export class ViewerController {
 
   private rememberOutputBounds() {
     if (!this.outputWindow || this.applyingWindowSettings || this.state.window.fullscreen || this.outputWindow.isFullScreen()) return
-    const bounds = this.outputWindow.getBounds()
+    const rawBounds = this.outputWindow.getBounds()
+    const changedDimension = this.state.window.bounds && rawBounds.width === this.state.window.bounds.width && rawBounds.height !== this.state.window.bounds.height
+      ? 'height'
+      : 'width'
+    const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
+    const bounds = normalizeViewerWindowBounds(rawBounds, display.workArea, this.state.window.aspectMode, changedDimension)
+    if (!sameBounds(bounds, rawBounds)) {
+      this.applyingWindowSettings = true
+      try {
+        this.outputWindow.setBounds(bounds)
+      } finally {
+        this.applyingWindowSettings = false
+      }
+    }
     if (sameBounds(this.state.window.bounds, bounds)) return
     this.state.window.bounds = bounds
     this.persist()
@@ -337,26 +353,6 @@ export class ViewerController {
   }
 }
 
-function normalizeBounds(bounds: ViewerWindowBounds | null, workArea: Electron.Rectangle): ViewerWindowBounds {
-  if (!bounds) return centeredBounds(workArea)
-  const width = Math.min(Math.max(320, bounds.width), workArea.width)
-  const height = Math.min(Math.max(180, bounds.height), workArea.height)
-  const x = Math.min(Math.max(bounds.x, workArea.x), workArea.x + workArea.width - width)
-  const y = Math.min(Math.max(bounds.y, workArea.y), workArea.y + workArea.height - height)
-  return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) }
-}
-
 function sameBounds(first: ViewerWindowBounds | null, second: Electron.Rectangle) {
   return first?.x === second.x && first.y === second.y && first.width === second.width && first.height === second.height
-}
-
-function centeredBounds(workArea: Electron.Rectangle): ViewerWindowBounds {
-  const width = Math.min(1280, workArea.width)
-  const height = Math.min(720, workArea.height)
-  return {
-    x: workArea.x + Math.round((workArea.width - width) / 2),
-    y: workArea.y + Math.round((workArea.height - height) / 2),
-    width,
-    height,
-  }
 }

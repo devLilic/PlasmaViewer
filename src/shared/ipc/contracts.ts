@@ -9,7 +9,7 @@ import type {
 } from '../licensing/contracts'
 import type { AppSettings, SettingsKey } from '../settings/types'
 import type { UpdateErrorPayload, UpdateStateEvent, VersionInfo } from '../types/update'
-import type { ViewerFr3Settings, ViewerState, ViewerTransform, ViewerTransformDefaults, ViewerWindowSettings } from '../viewer/contracts'
+import type { ViewerFr3Settings, ViewerState, ViewerTransform, ViewerTransformDefaults, ViewerWindowUpdate } from '../viewer/contracts'
 
 export const ipcInvokeChannels = {
   appGetInfo: 'app:get-info',
@@ -187,7 +187,7 @@ export interface IpcInvokeContract {
   [ipcInvokeChannels.viewerSetTransform]: { request: ViewerTransform; response: ViewerState }
   [ipcInvokeChannels.viewerSetTransformDefaults]: { request: ViewerTransformDefaults; response: ViewerState }
   [ipcInvokeChannels.viewerSetFr3]: { request: Pick<ViewerFr3Settings, 'enabled' | 'transform'>; response: ViewerState }
-  [ipcInvokeChannels.viewerSetWindow]: { request: Partial<ViewerWindowSettings>; response: ViewerState }
+  [ipcInvokeChannels.viewerSetWindow]: { request: ViewerWindowUpdate; response: ViewerState }
   [ipcInvokeChannels.viewerChooseDefaultImage]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerClearDefaultImage]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerResetTransform]: { request: void; response: ViewerState }
