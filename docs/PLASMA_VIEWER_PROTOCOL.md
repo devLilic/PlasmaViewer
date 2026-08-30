@@ -9,7 +9,7 @@ PlasmaViewer listens only on `127.0.0.1:47832` by default. Every request require
 
 Every command contains `id` (unique string), `version: 1`, an ISO-8601 `timestamp`,
 `type`, and the type-specific `payload`. Supported types are `show`, `transform`,
-`hide`, `window`, and `reset-transform`. Duplicate IDs are acknowledged without
+`hide`, `disconnect-outputs`, `window`, and `reset-transform`. Duplicate IDs are acknowledged without
 applying the command twice.
 
 Transform limits are brightness, contrast and saturation 0–200, zoom 1–4 and pan X/Y dependent on zoom: at `1×` pan is `0`; above it, each axis is clamped to `±((zoom - 1) × 50)%` so the onAIR image always covers FR2. `saturation` is additive for v1: older commands which omit it are normalized to 100.
@@ -26,4 +26,4 @@ FR3 is a separate frameless, fullscreen background window on the display selecte
 
 FR1 also provides a non-persistent keyboard-adjustment mode for windowed FR2. With FR1 focused and the capture surface active, arrows move FR2 by 1 px, Ctrl+arrows resize it by 1 px, Shift changes the step to 10 px, and Escape exits the mode. It is not a system-wide shortcut; editable controls, fullscreen and lost focus disable or suppress it. Bounds still use the same main-process normalization.
 
-The onAIR button in the FR1 header uses a separate local IPC action to disconnect both presentation windows: it hides FR2 and FR3, clears the active image, and temporarily suppresses FR3 without changing its persisted toggle. The next `show` command reconnects the enabled windows.
+`disconnect-outputs` disconnects both presentation windows: it hides FR2 and FR3, clears the active image, and temporarily suppresses FR3 without changing its persisted toggle. The FR1 header and the onAIR dialog in `plasma.test` use this command. The next `show` command reconnects the enabled windows.

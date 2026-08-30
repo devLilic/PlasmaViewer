@@ -40,6 +40,12 @@ describe('PlasmaViewer protocol', () => {
     })).toBe(true)
   })
 
+  it('accepts a command to disconnect both output windows', () => {
+    expect(isViewerCommand({
+      id: 'command-123', version: 1, timestamp: new Date().toISOString(), type: 'disconnect-outputs',
+    })).toBe(true)
+  })
+
   it('shows FR3 only when enabled and its default image is valid', () => {
     const image = { name: 'fundal.jpg', url: 'plasma-viewer-background://current/image' }
     expect(shouldShowFr3(false, image)).toBe(false)

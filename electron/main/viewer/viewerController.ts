@@ -122,6 +122,8 @@ export class ViewerController {
       this.state.transform = normalizeTransform(command.payload)
     } else if (command.type === 'hide') {
       this.hide()
+    } else if (command.type === 'disconnect-outputs') {
+      this.disconnectOutputs()
     } else if (command.type === 'window') {
       const { boundsChangedDimension: _boundsChangedDimension, ...windowUpdate } = command.payload
       this.state.window = {

@@ -30,10 +30,9 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .image-layers { position: absolute; inset: 0; }
 .preview img, .output img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
 .preview .active-image, .output .active-image { z-index: 2; transition: transform .08s linear, filter .08s linear; }
+.preview .current-image, .output .current-image { z-index: 3; }
+.preview .pending-image, .output .pending-image { z-index: 3; visibility: hidden; }
 .preview .default-image, .output .default-image { z-index: 1; }
-.viewer-image-loader { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: radial-gradient(circle at center, rgba(32, 64, 117, .5), transparent 60%); }
-.viewer-image-loader span { width: 34px; height: 34px; border: 3px solid rgba(255,255,255,.17); border-top-color: #70adff; border-radius: 50%; animation: viewer-spin .8s linear infinite; }
-@keyframes viewer-spin { to { transform: rotate(360deg); } }
 .empty { display: grid; height: 100%; place-items: center; color: #708099; font-size: 14px; }
 .preview-meta { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 5px 10px; }
 .preview-meta strong, .preview-meta small { display: block; }

@@ -170,6 +170,7 @@ export type ViewerCommand =
   | { id: string; version: 1; timestamp: string; type: 'show'; payload: { image: ViewerImage; transform: Partial<ViewerTransform> } }
   | { id: string; version: 1; timestamp: string; type: 'transform'; payload: Partial<ViewerTransform> }
   | { id: string; version: 1; timestamp: string; type: 'hide'; payload?: Record<string, never> }
+  | { id: string; version: 1; timestamp: string; type: 'disconnect-outputs'; payload?: Record<string, never> }
   | { id: string; version: 1; timestamp: string; type: 'window'; payload: ViewerWindowUpdate }
   | { id: string; version: 1; timestamp: string; type: 'reset-transform'; payload?: Record<string, never> }
 
@@ -199,10 +200,10 @@ export function isViewerCommand(value: unknown): value is ViewerCommand {
   if (!value || typeof value !== 'object') return false
   const command = value as Record<string, unknown>
   if (command.version !== VIEWER_PROTOCOL_VERSION || typeof command.id !== 'string' || command.id.length < 8) return false
-  if (typeof command.timestamp !== 'string' || !['show', 'transform', 'hide', 'window', 'reset-transform'].includes(String(command.type))) return false
+  if (typeof command.timestamp !== 'string' || !['show', 'transform', 'hide', 'disconnect-outputs', 'window', 'reset-transform'].includes(String(command.type))) return false
   if (command.type === 'show') {
     const payload = command.payload as { image?: Record<string, unknown>; transform?: unknown } | undefined
     return Boolean(payload?.image && Number.isInteger(payload.image.imageId) && Number.isInteger(payload.image.articleId) && typeof payload.image.url === 'string' && typeof payload.image.title === 'string' && (typeof payload.image.source === 'string' || payload.image.source === null || payload.image.source === undefined) && payload.transform)
   }
-  return command.type === 'hide' || command.type === 'reset-transform' || Boolean(command.payload && typeof command.payload === 'object')
+  return command.type === 'hide' || command.type === 'disconnect-outputs' || command.type === 'reset-transform' || Boolean(command.payload && typeof command.payload === 'object')
 }

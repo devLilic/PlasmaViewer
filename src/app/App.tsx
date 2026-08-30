@@ -46,18 +46,15 @@ function Output({ state }: { state: ViewerState }) {
 }
 
 function ImageLayers({ state, preview = false }: { state: ViewerState; preview?: boolean }) {
-  const [loadedUrls, setLoadedUrls] = useState<Set<string>>(() => new Set())
+  const [activeLayers, promoteActiveImage] = useActiveImageLayers(state.activeImage)
   const targetUrl = state.activeImage?.url ?? null
-  const loading = Boolean(targetUrl && !loadedUrls.has(targetUrl))
-  const markLoaded = (url: string) => setLoadedUrls(current => new Set(current).add(url))
 
   if (!state.activeImage && !state.defaultImage) {
     return preview ? <div className="empty">Nicio imagine selectată din Plasma</div> : null
   }
 
   return (
-    <div className="image-layers" aria-busy={loading}>
-      {loading && <div className="viewer-image-loader" aria-hidden="true"><span /></div>}
+    <div className="image-layers">
       {state.defaultImage && (
         <img
           className="default-image"
@@ -66,15 +63,33 @@ function ImageLayers({ state, preview = false }: { state: ViewerState; preview?:
           style={defaultImageStyle(state)}
         />
       )}
-      {state.activeImage && (
+      {activeLayers.previous && targetUrl && (
         <img
-          className="active-image"
+          className="active-image previous-image"
+          key={activeLayers.previous.image.url}
+          src={activeLayers.previous.image.url}
+          alt="Imagine onAIR"
+          style={imageStyle(activeLayers.previous.transform)}
+        />
+      )}
+      {activeLayers.current && targetUrl && (
+        <img
+          className="active-image current-image"
+          key={activeLayers.current.image.url}
+          src={activeLayers.current.image.url}
+          alt="Imagine onAIR"
+          style={imageStyle(activeLayers.current.image.url === targetUrl ? state.transform : activeLayers.current.transform)}
+        />
+      )}
+      {state.activeImage && state.activeImage.url !== activeLayers.current?.image.url && (
+        <img
+          className="active-image pending-image"
           key={state.activeImage.url}
           src={state.activeImage.url}
-          alt="Imagine onAIR"
+          alt=""
+          aria-hidden="true"
           style={imageStyle(state.transform)}
-          onLoad={() => markLoaded(state.activeImage!.url)}
-          onError={() => markLoaded(state.activeImage!.url)}
+          onLoad={() => promoteActiveImage({ image: state.activeImage!, transform: state.transform })}
         />
       )}
     </div>
@@ -182,6 +197,41 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
       {state.error && <div className="error">{state.error}</div>}
     </main>
   )
+}
+
+type DisplayedActiveImage = { image: NonNullable<ViewerState['activeImage']>; transform: ViewerTransform }
+
+function useActiveImageLayers(activeImage: ViewerState['activeImage']) {
+  const [layers, setLayers] = useState<{ current: DisplayedActiveImage | null; previous: DisplayedActiveImage | null }>({ current: null, previous: null })
+  const cleanupFrameRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!activeImage) {
+      if (cleanupFrameRef.current !== null) cancelAnimationFrame(cleanupFrameRef.current)
+      cleanupFrameRef.current = null
+      setLayers({ current: null, previous: null })
+    }
+  }, [activeImage?.url])
+
+  useEffect(() => () => {
+    if (cleanupFrameRef.current !== null) cancelAnimationFrame(cleanupFrameRef.current)
+  }, [])
+
+  const promote = (next: DisplayedActiveImage) => {
+    setLayers(current => current.current?.image.url === next.image.url
+      ? current
+      : { current: next, previous: current.current })
+
+    if (cleanupFrameRef.current !== null) cancelAnimationFrame(cleanupFrameRef.current)
+    cleanupFrameRef.current = requestAnimationFrame(() => {
+      cleanupFrameRef.current = requestAnimationFrame(() => {
+        setLayers(current => ({ ...current, previous: null }))
+        cleanupFrameRef.current = null
+      })
+    })
+  }
+
+  return [layers, promote] as const
 }
 
 function Background({ state }: { state: ViewerState }) {
