@@ -6,11 +6,11 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 
 | Câmp | Valoare |
 |---|---|
-| Task activ | [PV-007 — Verificare integrată și documentație finală](task-briefs/PV-007.md) |
-| Status | In progress |
+| Task activ | Niciunul — milestone PV-001–PV-007 finalizat |
+| Status | Completed |
 | Obiectiv | Verificare integrată, build și documentație finală. |
-| Blocaj | Niciunul cunoscut. |
-| Următorul task eligibil | PV-007 este activ. |
+| Blocaj | Niciunul pentru scope-ul Viewer; verificarea manuală multi-monitor rămâne necesară pe o stație compatibilă. |
+| Următorul task eligibil | Niciunul în acest milestone. |
 
 ## Registru taskuri
 
@@ -22,7 +22,7 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 | [PV-004](task-briefs/PV-004.md) | Completed | PV-002 | Fereastra fullscreen FR3 și controlul ei persistent. |
 | [PV-005](task-briefs/PV-005.md) | Completed | PV-004 | Reordonarea controalelor FR1 și blocarea dimensiunii FR2 la 16:9. |
 | [PV-006](task-briefs/PV-006.md) | Completed | PV-005 | Ajustarea poziției și dimensiunii FR2 din tastatură. |
-| [PV-007](task-briefs/PV-007.md) | In progress | PV-003, PV-004, PV-005, PV-006 | Verificare integrată, build și documentație finală. |
+| [PV-007](task-briefs/PV-007.md) | Completed | PV-003, PV-004, PV-005, PV-006 | Verificare integrată, build și documentație finală. |
 
 ## Ordine obligatorie
 
