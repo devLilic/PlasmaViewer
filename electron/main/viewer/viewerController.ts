@@ -321,9 +321,12 @@ export class ViewerController {
     const defaultImage = this.describeValidDefaultImage()
     if (this.state.defaultImage && !defaultImage) this.state.error = 'Imaginea implicită FR3 nu mai este disponibilă sau nu este validă.'
     this.state.defaultImage = defaultImage
-    this.fr3Window.setFullScreen(false)
-    this.fr3Window.setBounds(display.bounds)
-    this.fr3Window.setFullScreen(true)
+    const requiresFullscreenUpdate = !this.fr3Window.isFullScreen() || !sameBounds(this.fr3Window.getBounds(), display.bounds)
+    if (requiresFullscreenUpdate) {
+      if (this.fr3Window.isFullScreen()) this.fr3Window.setFullScreen(false)
+      this.fr3Window.setBounds(display.bounds)
+      this.fr3Window.setFullScreen(true)
+    }
     const shouldShow = shouldShowFr3(this.state.fr3.enabled, this.state.defaultImage, this.state.window.fullscreen)
     if (shouldShow) {
       this.fr3Window.showInactive()
