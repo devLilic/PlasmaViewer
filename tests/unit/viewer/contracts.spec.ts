@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { createTransformDefaults, isViewerCommand, normalizeTransform, normalizeViewerWindowBounds, resolveViewerDisplayId, shouldShowFr3 } from '../../../src/shared/viewer/contracts'
+import { createTransformDefaults, isViewerCommand, maxViewerPanForZoom, normalizeTransform, normalizeViewerWindowBounds, resolveViewerDisplayId, shouldShowFr3 } from '../../../src/shared/viewer/contracts'
 
 describe('PlasmaViewer protocol', () => {
   it('clamps transforms to safe ranges', () => {
     expect(normalizeTransform({ brightness: 300, contrast: 300, saturation: -1, zoom: 0, panX: -200, panY: 150, flipX: true })).toEqual({
-      brightness: 200, contrast: 200, saturation: 0, zoom: 1, panX: -100, panY: 100, flipX: true,
+      brightness: 200, contrast: 200, saturation: 0, zoom: 1, panX: 0, panY: 0, flipX: true,
     })
   })
 
@@ -13,6 +13,13 @@ describe('PlasmaViewer protocol', () => {
     expect(createTransformDefaults({ brightness: 120, contrast: 80, saturation: 140 })).toEqual({
       brightness: 120, contrast: 80, saturation: 140, zoom: 1, panX: 0, panY: 0, flipX: false,
     })
+  })
+
+  it('clamps pan to the image coverage available at the selected zoom', () => {
+    expect(maxViewerPanForZoom(1)).toBe(0)
+    expect(maxViewerPanForZoom(1.5)).toBe(25)
+    expect(normalizeTransform({ zoom: 1, panX: 30, panY: -30 })).toMatchObject({ zoom: 1, panX: 0, panY: 0 })
+    expect(normalizeTransform({ zoom: 1.5, panX: 30, panY: -30 })).toMatchObject({ zoom: 1.5, panX: 25, panY: -25 })
   })
 
   it('accepts a valid show command', () => {

@@ -12,7 +12,7 @@ Every command contains `id` (unique string), `version: 1`, an ISO-8601 `timestam
 `hide`, `window`, and `reset-transform`. Duplicate IDs are acknowledged without
 applying the command twice.
 
-Transform limits are brightness, contrast and saturation 0–200, zoom 1–4 and pan X/Y -100–100. `saturation` is additive for v1: older commands which omit it are normalized to 100.
+Transform limits are brightness, contrast and saturation 0–200, zoom 1–4 and pan X/Y dependent on zoom: at `1×` pan is `0`; above it, each axis is clamped to `±((zoom - 1) × 50)%` so the onAIR image always covers FR2. `saturation` is additive for v1: older commands which omit it are normalized to 100.
 
 Image transforms belong to the currently displayed image. They are not persisted
 as application settings and a newly opened Plasma dialog starts from the default

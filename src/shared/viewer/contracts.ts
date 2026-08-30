@@ -174,15 +174,21 @@ export type ViewerCommand =
   | { id: string; version: 1; timestamp: string; type: 'reset-transform'; payload?: Record<string, never> }
 
 export function normalizeTransform(value: Partial<ViewerTransform>): ViewerTransform {
+  const zoom = clamp(value.zoom ?? 1, 1, 4)
+  const maxPan = maxViewerPanForZoom(zoom)
   return {
     brightness: clamp(value.brightness ?? 100, 0, 200),
     contrast: clamp(value.contrast ?? 100, 0, 200),
     saturation: clamp(value.saturation ?? 100, 0, 200),
-    zoom: clamp(value.zoom ?? 1, 1, 4),
-    panX: clamp(value.panX ?? 0, -100, 100),
-    panY: clamp(value.panY ?? 0, -100, 100),
+    zoom,
+    panX: maxPan === 0 ? 0 : clamp(value.panX ?? 0, -maxPan, maxPan),
+    panY: maxPan === 0 ? 0 : clamp(value.panY ?? 0, -maxPan, maxPan),
     flipX: Boolean(value.flipX),
   }
+}
+
+export function maxViewerPanForZoom(zoom: number) {
+  return Math.max(0, (clamp(zoom, 1, 4) - 1) * 50)
 }
 
 function clamp(value: number, min: number, max: number) {
