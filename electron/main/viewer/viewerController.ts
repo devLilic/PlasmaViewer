@@ -217,7 +217,7 @@ export class ViewerController {
   }
 
   hide() {
-    if (this.state.window.fullscreen) {
+    if (this.state.window.fullscreen || this.outputWindow?.isFullScreen()) {
       this.state.activeImage = null
       this.state.visible = false
       this.broadcast()
