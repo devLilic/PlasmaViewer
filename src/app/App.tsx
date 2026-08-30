@@ -123,7 +123,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
         <Brand />
         <Navigation page={page} onChange={onNavigate} />
         <div className="header-actions">
-          <button className={`onair-control ${state.visible ? 'live' : ''}`} disabled={!state.visible} onClick={() => void window.viewerApi.hideOutput()} aria-label="Oprește afișarea onAIR"><i /><span>{state.visible ? 'ON AIR' : 'OFF AIR'}</span>{state.visible && <b>OPREȘTE</b>}</button>
+          <button className={`onair-control ${state.visible ? 'live' : ''}`} disabled={!state.visible} onClick={() => void window.viewerApi.disconnectOutputs()} aria-label="Deconectează ferestrele FR2 și FR3"><i /><span>{state.visible ? 'ON AIR' : 'OFF AIR'}</span>{state.visible && <b>DECONECTEAZĂ</b>}</button>
           <div className="output-menu">
             <button className="menu-trigger" aria-label="Setări fereastră output">Output <span aria-hidden="true">•••</span></button>
             <div className="output-menu-panel">

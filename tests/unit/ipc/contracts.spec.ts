@@ -33,6 +33,7 @@ describe('ipc contracts', () => {
       'viewer:reset-transform',
       'viewer:show-output',
       'viewer:hide-output',
+      'viewer:disconnect-outputs',
     ])
     expect(new Set(channels).size).toBe(channels.length)
   })

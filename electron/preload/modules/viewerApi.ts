@@ -14,6 +14,7 @@ export function exposeViewerApi() {
     resetTransform: () => ipcRenderer.invoke(ipcInvokeChannels.viewerResetTransform) as Promise<ViewerState>,
     showOutput: () => ipcRenderer.invoke(ipcInvokeChannels.viewerShowOutput) as Promise<ViewerState>,
     hideOutput: () => ipcRenderer.invoke(ipcInvokeChannels.viewerHideOutput) as Promise<ViewerState>,
+    disconnectOutputs: () => ipcRenderer.invoke(ipcInvokeChannels.viewerDisconnectOutputs) as Promise<ViewerState>,
     onStateChanged: (listener: (state: ViewerState) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, state: ViewerState) => listener(state)
       ipcRenderer.on(ipcEventChannels.viewerStateChanged, handler)

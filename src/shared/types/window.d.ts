@@ -75,6 +75,7 @@ declare global {
       resetTransform: () => Promise<ViewerState>
       showOutput: () => Promise<ViewerState>
       hideOutput: () => Promise<ViewerState>
+      disconnectOutputs: () => Promise<ViewerState>
       onStateChanged: (listener: (state: ViewerState) => void) => () => void
     }
   }

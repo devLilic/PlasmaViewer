@@ -35,6 +35,7 @@ export class ViewerController {
   private defaultImagePath: string | null
   private state: ViewerState
   private applyingWindowSettings = false
+  private fr3Suppressed = false
 
   constructor() {
     const persisted = this.store.read()
@@ -208,7 +209,9 @@ export class ViewerController {
 
   showOutput() {
     if (!this.outputWindow || !this.state.activeImage) return this.getState()
+    this.fr3Suppressed = false
     this.applyWindowSettings(this.state.window, false)
+    this.applyFr3Settings()
     this.outputWindow.showInactive()
     if (this.state.window.topmost) this.outputWindow.moveTop()
     this.state.visible = true
@@ -219,6 +222,17 @@ export class ViewerController {
   hide() {
     this.state.activeImage = null
     this.state.visible = false
+    this.broadcast()
+    return this.getState()
+  }
+
+  disconnectOutputs() {
+    this.fr3Suppressed = true
+    this.state.activeImage = null
+    this.outputWindow?.hide()
+    this.fr3Window?.hide()
+    this.state.visible = false
+    this.state.fr3.visible = false
     this.broadcast()
     return this.getState()
   }
@@ -321,7 +335,7 @@ export class ViewerController {
       this.fr3Window.setBounds(display.bounds)
       this.fr3Window.setFullScreen(true)
     }
-    const shouldShow = shouldShowFr3(this.state.fr3.enabled, this.state.defaultImage, this.state.window.fullscreen)
+    const shouldShow = !this.fr3Suppressed && shouldShowFr3(this.state.fr3.enabled, this.state.defaultImage, this.state.window.fullscreen)
     if (shouldShow) {
       this.fr3Window.showInactive()
       this.fr3Window.moveTop()

@@ -39,6 +39,7 @@ export const ipcInvokeChannels = {
   viewerResetTransform: 'viewer:reset-transform',
   viewerShowOutput: 'viewer:show-output',
   viewerHideOutput: 'viewer:hide-output',
+  viewerDisconnectOutputs: 'viewer:disconnect-outputs',
 } as const
 
 export const ipcEventChannels = {
@@ -193,6 +194,7 @@ export interface IpcInvokeContract {
   [ipcInvokeChannels.viewerResetTransform]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerShowOutput]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerHideOutput]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerDisconnectOutputs]: { request: void; response: ViewerState }
 }
 
 export interface IpcEventContract {

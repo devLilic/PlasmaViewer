@@ -56,4 +56,5 @@ function registerViewerIpc(controller: ViewerController) {
   ipcMain.handle(ipcInvokeChannels.viewerResetTransform, () => controller.resetTransform())
   ipcMain.handle(ipcInvokeChannels.viewerShowOutput, () => controller.showOutput())
   ipcMain.handle(ipcInvokeChannels.viewerHideOutput, () => controller.hide())
+  ipcMain.handle(ipcInvokeChannels.viewerDisconnectOutputs, () => controller.disconnectOutputs())
 }
