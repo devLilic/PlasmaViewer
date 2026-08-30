@@ -9,7 +9,7 @@ import type {
 } from '../licensing/contracts'
 import type { AppSettings, SettingsKey } from '../settings/types'
 import type { UpdateErrorPayload, UpdateStateEvent, VersionInfo } from '../types/update'
-import type { ViewerState, ViewerTransform, ViewerWindowSettings } from '../viewer/contracts'
+import type { ViewerState, ViewerTransform, ViewerTransformDefaults, ViewerWindowSettings } from '../viewer/contracts'
 
 export const ipcInvokeChannels = {
   appGetInfo: 'app:get-info',
@@ -31,6 +31,7 @@ export const ipcInvokeChannels = {
   settingsSet: 'settings:set',
   viewerGetState: 'viewer:get-state',
   viewerSetTransform: 'viewer:set-transform',
+  viewerSetTransformDefaults: 'viewer:set-transform-defaults',
   viewerSetWindow: 'viewer:set-window',
   viewerChooseDefaultImage: 'viewer:choose-default-image',
   viewerClearDefaultImage: 'viewer:clear-default-image',
@@ -183,6 +184,7 @@ export interface IpcInvokeContract {
   }
   [ipcInvokeChannels.viewerGetState]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerSetTransform]: { request: ViewerTransform; response: ViewerState }
+  [ipcInvokeChannels.viewerSetTransformDefaults]: { request: ViewerTransformDefaults; response: ViewerState }
   [ipcInvokeChannels.viewerSetWindow]: { request: Partial<ViewerWindowSettings>; response: ViewerState }
   [ipcInvokeChannels.viewerChooseDefaultImage]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerClearDefaultImage]: { request: void; response: ViewerState }

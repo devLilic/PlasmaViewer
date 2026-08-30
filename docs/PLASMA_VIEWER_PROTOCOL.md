@@ -20,9 +20,6 @@ transform defaults (the persisted brightness, contrast and saturation values; zo
 
 `GET /v1/state` also includes `transformDefaults`, the persisted FR3 configuration (`fr3`) and the FR2 `window.aspectMode`. FR3 remains non-visible until its dedicated window is implemented.
 
-The control window (FR1) can configure a persistent local default image. The
-output window (FR2) renders this image as a fixed background and renders the
-image received from `plasma.test` in a separate layer above it. Transform
-commands affect only the `plasma.test` layer. The default image can be selected
-or removed only through FR1; the HTTP protocol exposes its descriptor in state
-but cannot change its local file path.
+The FR1 Settings page configures the persistent local default image intended for FR3 and the default brightness, contrast and saturation profile. Selecting or removing the image is saved immediately; numerical defaults are saved explicitly and never alter the active onAIR transform. The HTTP protocol exposes the image descriptor in state but cannot change its local file path.
+
+FR2 continues to render its existing local default background and the image received from `plasma.test` in separate layers. Transform commands affect only the `plasma.test` layer.

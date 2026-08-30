@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { ViewerState, ViewerTransform } from '@/shared/viewer/contracts'
+import type { ViewerState, ViewerTransform, ViewerTransformDefaults } from '@/shared/viewer/contracts'
 import './App.css'
 
 const initial: ViewerState = {
@@ -17,6 +17,7 @@ const initial: ViewerState = {
 
 function App() {
   const [state, setState] = useState(initial)
+  const [page, setPage] = useState<'control' | 'settings'>('control')
   const isOutput = useMemo(() => new URLSearchParams(window.location.search).get('view') === 'output', [])
 
   useEffect(() => {
@@ -24,7 +25,11 @@ function App() {
     return window.viewerApi.onStateChanged(setState)
   }, [])
 
-  return isOutput ? <Output state={state} /> : <Control state={state} />
+  return isOutput ? <Output state={state} /> : <><Navigation page={page} onChange={setPage} /><Control state={state} hidden={page !== 'control'} /><Settings state={state} hidden={page !== 'settings'} /></>
+}
+
+function Navigation({ page, onChange }: { page: 'control' | 'settings'; onChange: (page: 'control' | 'settings') => void }) {
+  return <nav className="viewer-navigation" aria-label="Navigare Viewer"><button className={page === 'control' ? 'active' : ''} onClick={() => onChange('control')}>Control</button><button className={page === 'settings' ? 'active' : ''} onClick={() => onChange('settings')}>Settings</button></nav>
 }
 
 function Output({ state }: { state: ViewerState }) {
@@ -73,12 +78,12 @@ function ImageLayers({ state, preview = false }: { state: ViewerState; preview?:
   )
 }
 
-function Control({ state }: { state: ViewerState }) {
+function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
   const updateTransform = (patch: Partial<ViewerTransform>) => window.viewerApi.setTransform({ ...state.transform, ...patch })
   const canDisplay = Boolean(state.activeImage || state.defaultImage)
 
   return (
-    <main className="control-shell">
+    <main className="control-shell" hidden={hidden}>
       <header className="topbar">
         <div><span className="eyebrow">PLASMA</span><h1>PlasmaViewer</h1></div>
         <span className={`status ${state.visible ? 'live' : ''}`}><i />{state.visible ? 'onAIR' : 'Output ascuns'}</span>
@@ -119,15 +124,6 @@ function Control({ state }: { state: ViewerState }) {
           </div>
 
           <div className="divider" />
-          <h2>Imagine implicită FR2</h2>
-          <p className="default-image-name">{state.defaultImage?.name ?? 'Nicio imagine configurată'}</p>
-          <div className="default-image-actions">
-            <button className="secondary" onClick={() => window.viewerApi.chooseDefaultImage()}>Alege imaginea</button>
-            <button className="danger" disabled={!state.defaultImage} onClick={() => window.viewerApi.clearDefaultImage()}>Elimină</button>
-          </div>
-          <p className="hint">Imaginea implicită rămâne fixă în fundal. Ajustările de mai jos se aplică numai imaginii primite din plasma.test.</p>
-
-          <div className="divider" />
           <h2>Ajustări imagine plasma.test</h2>
           <Range label="Luminozitate" value={state.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateTransform({ brightness })} />
           <Range label="Contrast" value={state.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateTransform({ contrast })} />
@@ -141,6 +137,59 @@ function Control({ state }: { state: ViewerState }) {
       {state.error && <div className="error">{state.error}</div>}
     </main>
   )
+}
+
+function Settings({ state, hidden }: { state: ViewerState; hidden: boolean }) {
+  const [draft, setDraft] = useState<ViewerTransformDefaults>(pickDefaults(state))
+  const [notice, setNotice] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const persisted = pickDefaults(state)
+  const valid = isValidDefaults(draft)
+  const changed = draft.brightness !== persisted.brightness || draft.contrast !== persisted.contrast || draft.saturation !== persisted.saturation
+
+  useEffect(() => {
+    if (!saving) setDraft(pickDefaults(state))
+  }, [state.transformDefaults.brightness, state.transformDefaults.contrast, state.transformDefaults.saturation, saving])
+
+  const save = async () => {
+    if (!valid || !changed) return
+    setSaving(true)
+    setNotice(null)
+    try {
+      await window.viewerApi.setTransformDefaults(draft)
+      setNotice('Defaulturile au fost salvate.')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Defaulturile nu au putut fi salvate.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return <main className="control-shell" hidden={hidden}>
+    <header className="topbar"><div><span className="eyebrow">PLASMA</span><h1>Settings</h1></div></header>
+    <section className="settings-layout">
+      <section className="panel settings-panel">
+        <h2>Imagine implicită FR3</h2>
+        <p className="default-image-name">{state.defaultImage?.name ?? 'Nicio imagine configurată'}</p>
+        <div className="default-image-actions">
+          <button className="secondary" onClick={() => void window.viewerApi.chooseDefaultImage().catch(error => setNotice(error instanceof Error ? error.message : 'Imaginea nu a putut fi selectată.'))}>Alege imaginea</button>
+          <button className="danger" disabled={!state.defaultImage} onClick={() => void window.viewerApi.clearDefaultImage().catch(error => setNotice(error instanceof Error ? error.message : 'Imaginea nu a putut fi eliminată.'))}>Elimină</button>
+        </div>
+        <p className="hint">Imaginea este salvată imediat după alegere și va fi utilizată de FR3 când fereastra va fi activată.</p>
+
+        <div className="divider" />
+        <h2>Defaulturi imagine</h2>
+        <p className="hint">Se aplică la resetare și pentru inițializările următoare; nu modifică imaginea onAIR curentă.</p>
+        <Range label="Luminozitate" value={draft.brightness} min={0} max={200} unit="%" onChange={brightness => setDraft(current => ({ ...current, brightness }))} />
+        <Range label="Contrast" value={draft.contrast} min={0} max={200} unit="%" onChange={contrast => setDraft(current => ({ ...current, contrast }))} />
+        <Range label="Saturație" value={draft.saturation} min={0} max={200} unit="%" onChange={saturation => setDraft(current => ({ ...current, saturation }))} />
+        {!valid && <p className="validation-error">Valorile trebuie să fie între 0% și 200%.</p>}
+        {changed && <p className="unsaved">Modificări nesalvate.</p>}
+        <button className="primary save-defaults" disabled={!valid || !changed || saving} onClick={() => void save()}>{saving ? 'Se salvează…' : 'Salvează'}</button>
+        {notice && <p className="settings-notice">{notice}</p>}
+      </section>
+    </section>
+  </main>
 }
 
 function Range({ label, value, min, max, step = 1, unit, onChange }: { label: string; value: number; min: number; max: number; step?: number; unit: string; onChange: (value: number) => void }) {
@@ -172,6 +221,15 @@ function imageStyle(transform: ViewerTransform) {
     filter: `brightness(${transform.brightness}%) contrast(${transform.contrast}%)`,
     transform: `translate(${transform.panX}%, ${transform.panY}%) scale(${transform.zoom}) scaleX(${transform.flipX ? -1 : 1})`,
   }
+}
+
+function pickDefaults(state: ViewerState): ViewerTransformDefaults {
+  const { brightness, contrast, saturation } = state.transformDefaults
+  return { brightness, contrast, saturation }
+}
+
+function isValidDefaults(value: ViewerTransformDefaults) {
+  return [value.brightness, value.contrast, value.saturation].every(item => Number.isFinite(item) && item >= 0 && item <= 200)
 }
 
 export default App

@@ -1,5 +1,8 @@
 * { box-sizing: border-box; }
 body { overflow: hidden; }
+.viewer-navigation { position:fixed; z-index:10; top:28px; right:180px; display:flex; gap:6px; padding:4px; border:1px solid #2b3040; border-radius:12px; background:#141820; }
+.viewer-navigation button { min-height:32px; padding:0 13px; color:#aeb6c7; background:transparent; }
+.viewer-navigation button.active { color:#fff; background:#333946; }
 .control-shell { min-height: 100vh; padding: 26px; color: #eef1f7; background: radial-gradient(circle at 15% 0%, #20283c 0, #0b0d12 38%); }
 .topbar { display:flex; align-items:center; justify-content:space-between; max-width:1450px; margin:0 auto 22px; }
 .eyebrow { color:#58a6ff; font-size:11px; font-weight:800; letter-spacing:.24em; }
@@ -32,6 +35,11 @@ button:disabled { opacity:.35; cursor:not-allowed; }
 .danger { color:#ff9c97; background:#45282c; }
 .reset { width:100%; margin-top:18px; color:#aab2c3; background:#242a36; }
 .panel { padding:22px; overflow:auto; max-height:calc(100vh - 105px); }
+.settings-layout { max-width:760px; margin:0 auto; }
+.settings-panel { max-height:calc(100vh - 128px); }
+.save-defaults { width:100%; margin-top:8px; }
+.unsaved,.settings-notice { margin:12px 0; font-size:12px; color:#78b8ff; }
+.validation-error { margin:12px 0; color:#ff9c97; font-size:12px; }
 .panel h2 { margin:0 0 15px; font-size:15px; }
 .panel label:not(.toggle-row) { display:block; color:#969daf; font-size:12px; font-weight:650; }
 .panel select { width:100%; margin-top:7px; padding:10px; color:#eef1f7; border:1px solid #343a49; border-radius:10px; background:#1d222d; }

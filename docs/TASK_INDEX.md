@@ -6,19 +6,19 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 
 | Câmp | Valoare |
 |---|---|
-| Task activ | [PV-002 — Settings FR1 pentru fundal și defaulturi](task-briefs/PV-002.md) |
+| Task activ | [PV-003 — Saturație și sincronizare defaulturi](task-briefs/PV-003.md) |
 | Status | In progress |
-| Obiectiv | Pagina Settings din FR1 pentru imaginea FR3 și defaulturile de imagine. |
+| Obiectiv | Saturație completă și sincronizarea defaulturilor cu `plasma.test`. |
 | Blocaj | Niciunul cunoscut. |
-| Următorul task eligibil | PV-002 este activ. |
+| Următorul task eligibil | PV-003 este activ. |
 
 ## Registru taskuri
 
 | Task | Status | Dependențe | Rezultat principal |
 |---|---|---|---|
 | [PV-001](task-briefs/PV-001.md) | Completed | — | Contracte și persistență pentru saturație, defaulturi, FR3 și 16:9. |
-| [PV-002](task-briefs/PV-002.md) | In progress | PV-001 | Pagina Settings din FR1 pentru imaginea FR3 și defaulturile de imagine. |
-| [PV-003](task-briefs/PV-003.md) | Pending | PV-002 | Saturație completă și sincronizarea defaulturilor cu `plasma.test`. |
+| [PV-002](task-briefs/PV-002.md) | Completed | PV-001 | Pagina Settings din FR1 pentru imaginea FR3 și defaulturile de imagine. |
+| [PV-003](task-briefs/PV-003.md) | In progress | PV-002 | Saturație completă și sincronizarea defaulturilor cu `plasma.test`. |
 | [PV-004](task-briefs/PV-004.md) | Pending | PV-002 | Fereastra fullscreen FR3 și controlul ei persistent. |
 | [PV-005](task-briefs/PV-005.md) | Pending | PV-004 | Reordonarea controalelor FR1 și blocarea dimensiunii FR2 la 16:9. |
 | [PV-006](task-briefs/PV-006.md) | Pending | PV-005 | Ajustarea poziției și dimensiunii FR2 din tastatură. |

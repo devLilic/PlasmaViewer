@@ -10,6 +10,7 @@ import {
   type ViewerCommand,
   type ViewerDisplay,
   type ViewerState,
+  type ViewerTransformDefaults,
   type ViewerWindowBounds,
   type ViewerWindowSettings,
 } from '../../../src/shared/viewer/contracts'
@@ -125,6 +126,13 @@ export class ViewerController {
 
   async updateTransform(transform: ViewerState['transform']) {
     return this.execute({ id: randomUUID(), version: 1, timestamp: new Date().toISOString(), type: 'transform', payload: transform })
+  }
+
+  updateTransformDefaults(defaults: ViewerTransformDefaults) {
+    this.state.transformDefaults = createTransformDefaults(defaults)
+    this.persist()
+    this.broadcast()
+    return this.getState()
   }
 
   async updateWindow(settings: Partial<ViewerWindowSettings>) {

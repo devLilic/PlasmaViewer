@@ -19,7 +19,7 @@ import type { LicenseEntitlementsResult } from '@/shared/licensing/contracts'
 import type { UpdatePreferences, UiPreferences } from '@/shared/settings/types'
 import type { ProgressInfo } from 'electron-updater'
 import type { UpdateErrorPayload, UpdateStateEvent, VersionInfo } from './update'
-import type { ViewerState, ViewerTransform, ViewerWindowSettings } from '@/shared/viewer/contracts'
+import type { ViewerState, ViewerTransform, ViewerTransformDefaults, ViewerWindowSettings } from '@/shared/viewer/contracts'
 
 declare global {
   interface Window {
@@ -67,6 +67,7 @@ declare global {
     viewerApi: {
       getState: () => Promise<ViewerState>
       setTransform: (value: ViewerTransform) => Promise<ViewerState>
+      setTransformDefaults: (value: ViewerTransformDefaults) => Promise<ViewerState>
       setWindow: (value: Partial<ViewerWindowSettings>) => Promise<ViewerState>
       chooseDefaultImage: () => Promise<ViewerState>
       clearDefaultImage: () => Promise<ViewerState>

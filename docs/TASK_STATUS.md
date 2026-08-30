@@ -20,7 +20,8 @@ Baseline-ul descrie codul existent, nu criterii de acceptare pentru taskurile vi
 | Task | Status | Data | Rezultat și verificări |
 |---|---|---|---|
 | PV-001 | Completed | 2026-08-30 | Adăugate contractele pentru `saturation`, profilurile persistente ale imaginii, `fr3` și `aspectMode`; resetarea folosește acum profilul persistent. Testele Viewer: 8/8 PASS; TypeScript: PASS. Migrarea fișierelor vechi, round-trip-ul și fallbackurile invalide sunt acoperite prin teste. Verificare manuală multi-monitor: nu este necesară pentru acest task de contract/persistență. PV-002 a fost activat. |
-| PV-002 | In progress | 2026-08-30 | Activat după finalizarea PV-001. |
+| PV-002 | Completed | 2026-08-30 | Adăugată navigarea FR1 Control/Settings, configurarea imediată a imaginii implicite FR3 și draftul explicit pentru luminozitate, contrast și saturație. Salvarea folosește IPC tipizat, persistă numai profilul de default și nu schimbă imaginea onAIR activă. Teste Viewer/IPC: 10/10 PASS; TypeScript: PASS. Verificarea manuală de navigare, relansare și dialog nativ rămâne necesară. PV-003 a fost activat. |
+| PV-003 | In progress | 2026-08-30 | Activat după finalizarea PV-002. |
 
 ## Format pentru intrări noi
 
