@@ -5,7 +5,7 @@ import { indexHtmlPath, VITE_DEV_SERVER_URL } from '../bootstrap/paths'
 import { createViewerStateStore } from './viewerStateStore'
 import { describeViewerDefaultImage, registerViewerBackgroundProtocol } from './viewerBackgroundProtocol'
 import {
-  defaultViewerTransform,
+  createTransformDefaults,
   normalizeTransform,
   type ViewerCommand,
   type ViewerDisplay,
@@ -38,8 +38,10 @@ export class ViewerController {
       visible: false,
       activeImage: null,
       defaultImage,
-      transform: defaultViewerTransform,
+      transformDefaults: createTransformDefaults(persisted.transformDefaults),
+      transform: createTransformDefaults(persisted.transformDefaults),
       window: persisted.window,
+      fr3: persisted.fr3,
       displays: [],
       lastCommandId: null,
       error: null,
@@ -111,7 +113,7 @@ export class ViewerController {
       const shouldReposition = command.payload.displayId !== undefined || command.payload.fullscreen !== undefined || command.payload.bounds !== undefined
       this.applyWindowSettings(this.state.window, shouldReposition)
     } else if (command.type === 'reset-transform') {
-      this.state.transform = defaultViewerTransform
+      this.state.transform = this.state.transformDefaults
     }
 
     this.state.lastCommandId = command.id
@@ -252,7 +254,11 @@ export class ViewerController {
   }
 
   private persist() {
-    this.store.write({ window: this.state.window, defaultImagePath: this.defaultImagePath })
+    this.store.write({ window: this.state.window, defaultImagePath: this.defaultImagePath, transformDefaults: {
+      brightness: this.state.transformDefaults.brightness,
+      contrast: this.state.transformDefaults.contrast,
+      saturation: this.state.transformDefaults.saturation,
+    }, fr3: { ...this.state.fr3, visible: false } })
   }
 
   private rememberCommand(id: string) {

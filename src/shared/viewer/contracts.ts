@@ -3,6 +3,7 @@ export const VIEWER_PROTOCOL_VERSION = 1 as const
 export interface ViewerTransform {
   brightness: number
   contrast: number
+  saturation: number
   zoom: number
   panX: number
   panY: number
@@ -30,6 +31,7 @@ export interface ViewerWindowSettings {
   fullscreen: boolean
   topmost: boolean
   bounds: ViewerWindowBounds | null
+  aspectMode: 'free' | '16:9'
 }
 
 export interface ViewerWindowBounds {
@@ -44,12 +46,25 @@ export interface ViewerDefaultImage {
   url: string
 }
 
+export interface ViewerTransformDefaults {
+  brightness: number
+  contrast: number
+  saturation: number
+}
+
+export interface ViewerFr3Settings {
+  enabled: boolean
+  visible: boolean
+}
+
 export interface ViewerState {
   visible: boolean
   activeImage: ViewerImage | null
   defaultImage: ViewerDefaultImage | null
   transform: ViewerTransform
+  transformDefaults: ViewerTransform
   window: ViewerWindowSettings
+  fr3: ViewerFr3Settings
   displays: ViewerDisplay[]
   lastCommandId: string | null
   error: string | null
@@ -58,15 +73,20 @@ export interface ViewerState {
 export const defaultViewerTransform: ViewerTransform = {
   brightness: 100,
   contrast: 100,
+  saturation: 100,
   zoom: 1,
   panX: 0,
   panY: 0,
   flipX: false,
 }
 
+export function createTransformDefaults(defaults: Partial<ViewerTransformDefaults> = {}): ViewerTransform {
+  return normalizeTransform({ ...defaults, zoom: 1, panX: 0, panY: 0, flipX: false })
+}
+
 export type ViewerCommand =
-  | { id: string; version: 1; timestamp: string; type: 'show'; payload: { image: ViewerImage; transform: ViewerTransform } }
-  | { id: string; version: 1; timestamp: string; type: 'transform'; payload: ViewerTransform }
+  | { id: string; version: 1; timestamp: string; type: 'show'; payload: { image: ViewerImage; transform: Partial<ViewerTransform> } }
+  | { id: string; version: 1; timestamp: string; type: 'transform'; payload: Partial<ViewerTransform> }
   | { id: string; version: 1; timestamp: string; type: 'hide'; payload?: Record<string, never> }
   | { id: string; version: 1; timestamp: string; type: 'window'; payload: Partial<ViewerWindowSettings> }
   | { id: string; version: 1; timestamp: string; type: 'reset-transform'; payload?: Record<string, never> }
@@ -75,6 +95,7 @@ export function normalizeTransform(value: Partial<ViewerTransform>): ViewerTrans
   return {
     brightness: clamp(value.brightness ?? 100, 0, 200),
     contrast: clamp(value.contrast ?? 100, 0, 200),
+    saturation: clamp(value.saturation ?? 100, 0, 200),
     zoom: clamp(value.zoom ?? 1, 1, 4),
     panX: clamp(value.panX ?? 0, -100, 100),
     panY: clamp(value.panY ?? 0, -100, 100),

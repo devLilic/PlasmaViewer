@@ -12,12 +12,13 @@ Every command contains `id` (unique string), `version: 1`, an ISO-8601 `timestam
 `hide`, `window`, and `reset-transform`. Duplicate IDs are acknowledged without
 applying the command twice.
 
-Transform limits are brightness and contrast 0–200, zoom 1–4 and pan X/Y -100–100.
+Transform limits are brightness, contrast and saturation 0–200, zoom 1–4 and pan X/Y -100–100. `saturation` is additive for v1: older commands which omit it are normalized to 100.
 
 Image transforms belong to the currently displayed image. They are not persisted
 as application settings and a newly opened Plasma dialog starts from the default
-transform (brightness and contrast 100, zoom 1, centered, no flip). Window/display settings
-remain persistent. `reset-transform` applies the defaults immediately.
+transform defaults (the persisted brightness, contrast and saturation values; zoom 1, centered, no flip). Window/display settings remain persistent, including the `free` or `16:9` aspect preference. `reset-transform` applies the defaults immediately.
+
+`GET /v1/state` also includes `transformDefaults`, the persisted FR3 configuration (`fr3`) and the FR2 `window.aspectMode`. FR3 remains non-visible until its dedicated window is implemented.
 
 The control window (FR1) can configure a persistent local default image. The
 output window (FR2) renders this image as a fixed background and renders the
