@@ -261,7 +261,7 @@ export class ViewerController {
         return
       }
 
-      const bounds = normalizeViewerWindowBounds(settings.bounds, display.workArea, settings.aspectMode, changedDimension)
+      const bounds = normalizeViewerWindowBounds(settings.bounds, display.bounds, settings.aspectMode, changedDimension)
       if (reposition || !sameBounds(this.outputWindow.getBounds(), bounds)) this.outputWindow.setBounds(bounds)
       this.state.window.bounds = bounds
     } finally {
@@ -276,7 +276,7 @@ export class ViewerController {
       ? 'height'
       : 'width'
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
-    const bounds = normalizeViewerWindowBounds(rawBounds, display.workArea, this.state.window.aspectMode, changedDimension)
+    const bounds = normalizeViewerWindowBounds(rawBounds, display.bounds, this.state.window.aspectMode, changedDimension)
     if (!sameBounds(bounds, rawBounds)) {
       this.applyingWindowSettings = true
       try {

@@ -26,11 +26,15 @@ function App() {
   }, [])
 
   const isFr3 = useMemo(() => new URLSearchParams(window.location.search).get('view') === 'fr3', [])
-  return isOutput ? <Output state={state} /> : isFr3 ? <Background state={state} /> : <><Navigation page={page} onChange={setPage} /><Control state={state} hidden={page !== 'control'} /><Settings state={state} hidden={page !== 'settings'} /></>
+  return isOutput ? <Output state={state} /> : isFr3 ? <Background state={state} /> : <><Control state={state} hidden={page !== 'control'} page={page} onNavigate={setPage} /><Settings state={state} hidden={page !== 'settings'} page={page} onNavigate={setPage} /></>
 }
 
 function Navigation({ page, onChange }: { page: 'control' | 'settings'; onChange: (page: 'control' | 'settings') => void }) {
   return <nav className="viewer-navigation" aria-label="Navigare Viewer"><button className={page === 'control' ? 'active' : ''} onClick={() => onChange('control')}>Control</button><button className={page === 'settings' ? 'active' : ''} onClick={() => onChange('settings')}>Settings</button></nav>
+}
+
+function Brand() {
+  return <div className="brand"><img src="/plasma-viewer-logo.png" alt="" /><span>PlasmaViewer</span></div>
 }
 
 function Output({ state }: { state: ViewerState }) {
@@ -69,7 +73,7 @@ function ImageLayers({ state, preview = false }: { state: ViewerState; preview?:
   )
 }
 
-function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
+function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidden: boolean; page: 'control' | 'settings'; onNavigate: (page: 'control' | 'settings') => void }) {
   const updateTransform = (patch: Partial<ViewerTransform>) => window.viewerApi.setTransform({ ...state.transform, ...patch })
   const canDisplay = Boolean(state.activeImage)
   const [keyboardAdjustEnabled, setKeyboardAdjustEnabled] = useState(false)
@@ -108,8 +112,22 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
   return (
     <main className="control-shell" hidden={hidden}>
       <header className="topbar">
-        <div><span className="eyebrow">PLASMA</span><h1>PlasmaViewer</h1></div>
-        <span className={`status ${state.visible ? 'live' : ''}`}><i />{state.visible ? 'onAIR' : 'Output ascuns'}</span>
+        <Brand />
+        <Navigation page={page} onChange={onNavigate} />
+        <div className="header-actions">
+          <span className={`status ${state.visible ? 'live' : ''}`}><i /><span>{state.visible ? 'onAIR' : 'OFF AIR'}</span></span>
+          <div className="output-menu">
+            <button className="menu-trigger" aria-label="Setări fereastră output">Output <span aria-hidden="true">•••</span></button>
+            <div className="output-menu-panel">
+              <label>Monitor<select value={state.window.displayId ?? ''} onChange={(event) => window.viewerApi.setWindow({ displayId: event.target.value })}>
+                {state.displays.map(display => <option key={display.id} value={display.id}>{display.label}{display.primary ? ' — principal' : ''}</option>)}
+              </select></label>
+              <Toggle label="Fullscreen" checked={state.window.fullscreen} onChange={checked => window.viewerApi.setWindow({ fullscreen: checked })} />
+              <Toggle label="Întotdeauna deasupra" checked={state.window.topmost} onChange={checked => window.viewerApi.setWindow({ topmost: checked })} />
+              <Toggle label="Fixează 16:9" checked={state.window.aspectMode === '16:9'} onChange={checked => window.viewerApi.setWindow({ aspectMode: checked ? '16:9' : 'free' })} />
+            </div>
+          </div>
+        </div>
       </header>
 
       <section className="workspace">
@@ -118,7 +136,7 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
           <div className="preview-meta">
             <div>
               <strong>{state.activeImage?.title ?? 'Fără imagine'}</strong>
-              <small>{state.activeImage ? `Articol #${state.activeImage.articleId}` : 'Apasă onAIR în playlist'}</small>
+              {!state.activeImage && <small>Apasă onAIR în playlist</small>}
               {state.activeImage && <small className="image-source">Sursă locală: {state.activeImage.source ?? 'Fișier local indisponibil'}</small>}
             </div>
             <div className="actions">
@@ -126,18 +144,22 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
               <button className="primary" disabled={!canDisplay} onClick={() => window.viewerApi.showOutput()}>Afișează</button>
             </div>
           </div>
+          <section className="geometry-card">
+            <div className="section-heading"><div><h2>Poziție și dimensiune FR2</h2><p>Se aplică în modul windowed.</p></div><span className="geometry-mode">{state.window.aspectMode === '16:9' ? '16:9 blocat' : 'liber'}</span></div>
+            <div className="window-bounds">
+              <NumberField label="Stânga" value={state.window.bounds?.x ?? 0} onChange={x => updateWindowBounds(state, { x })} />
+              <NumberField label="Sus" value={state.window.bounds?.y ?? 0} onChange={y => updateWindowBounds(state, { y })} />
+              <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width })} />
+              <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height })} />
+            </div>
+            <div className="keyboard-adjustment" ref={keyboardCaptureRef} tabIndex={-1} aria-label="Captură taste pentru ajustarea FR2">
+              <button type="button" className={`keyboard-mode ${keyboardAdjustEnabled ? 'active' : ''}`} disabled={state.window.fullscreen} onClick={() => toggleKeyboardAdjust(!keyboardAdjustEnabled)}><span>Ajustare din taste</span><b>{keyboardAdjustEnabled ? 'ON' : 'OFF'}</b></button>
+              {keyboardAdjustEnabled && <p className="hint">Săgeți mută · Ctrl + săgeți redimensionează · Shift: 10 px · Escape: oprește</p>}
+            </div>
+          </section>
         </div>
 
         <aside className="panel">
-          <h2>Fereastră output</h2>
-          <label>Monitor<select value={state.window.displayId ?? ''} onChange={(event) => window.viewerApi.setWindow({ displayId: event.target.value })}>
-            {state.displays.map(display => <option key={display.id} value={display.id}>{display.label}{display.primary ? ' — principal' : ''}</option>)}
-          </select></label>
-          <Toggle label="Fullscreen" checked={state.window.fullscreen} onChange={checked => window.viewerApi.setWindow({ fullscreen: checked })} />
-          <Toggle label="Întotdeauna deasupra" checked={state.window.topmost} onChange={checked => window.viewerApi.setWindow({ topmost: checked })} />
-          <Toggle label="Fixează 16:9" checked={state.window.aspectMode === '16:9'} onChange={checked => window.viewerApi.setWindow({ aspectMode: checked ? '16:9' : 'free' })} />
-
-          <div className="divider" />
           <h2>Ajustări imagine plasma.test</h2>
           <Range label="Luminozitate" value={state.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateTransform({ brightness })} />
           <Range label="Contrast" value={state.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateTransform({ contrast })} />
@@ -147,20 +169,6 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
           <Range label="Poziție Y" value={state.transform.panY} min={-100} max={100} unit="%" onChange={panY => updateTransform({ panY })} />
           <Toggle label="Flip orizontal" checked={state.transform.flipX} onChange={flipX => updateTransform({ flipX })} />
           <button className="reset" onClick={() => window.viewerApi.resetTransform()}>Resetează ajustările</button>
-
-          <div className="divider" />
-          <h2>Poziție și dimensiune FR2</h2>
-          <p className="hint">Aceste valori se aplică atunci când fullscreen este dezactivat și sunt păstrate după repornire.</p>
-          <div className="window-bounds">
-            <NumberField label="Stânga" value={state.window.bounds?.x ?? 0} onChange={x => updateWindowBounds(state, { x })} />
-            <NumberField label="Sus" value={state.window.bounds?.y ?? 0} onChange={y => updateWindowBounds(state, { y })} />
-            <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width })} />
-            <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height })} />
-          </div>
-          <div className="keyboard-adjustment" ref={keyboardCaptureRef} tabIndex={-1} aria-label="Captură taste pentru ajustarea FR2">
-            <Toggle label="Ajustare din taste" checked={keyboardAdjustEnabled} onChange={toggleKeyboardAdjust} disabled={state.window.fullscreen} />
-            {keyboardAdjustEnabled && <p className="hint">Săgeți: poziție · Ctrl + săgeți: dimensiune · Shift: 10 px · Escape: oprește modul</p>}
-          </div>
         </aside>
       </section>
       {state.error && <div className="error">{state.error}</div>}
@@ -174,7 +182,7 @@ function Background({ state }: { state: ViewerState }) {
   return <main className="output" aria-label="Fereastră fundal FR3"><img className="default-image" src={state.defaultImage.url} alt="Imagine implicită FR3" style={{ filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)` }} /></main>
 }
 
-function Settings({ state, hidden }: { state: ViewerState; hidden: boolean }) {
+function Settings({ state, hidden, page, onNavigate }: { state: ViewerState; hidden: boolean; page: 'control' | 'settings'; onNavigate: (page: 'control' | 'settings') => void }) {
   const [draft, setDraft] = useState<ViewerTransformDefaults>(pickDefaults(state))
   const [notice, setNotice] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -201,7 +209,7 @@ function Settings({ state, hidden }: { state: ViewerState; hidden: boolean }) {
   }
 
   return <main className="control-shell" hidden={hidden}>
-    <header className="topbar"><div><span className="eyebrow">PLASMA</span><h1>Settings</h1></div></header>
+    <header className="topbar"><Brand /><Navigation page={page} onChange={onNavigate} /><span className="settings-label">Settings</span></header>
     <section className="settings-layout">
       <section className="panel settings-panel">
         <h2>Imagine implicită FR3</h2>

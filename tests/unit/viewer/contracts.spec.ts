@@ -62,4 +62,9 @@ describe('PlasmaViewer protocol', () => {
     expect(normalizeViewerWindowBounds({ x: -50, y: -50, width: 1600, height: 900 }, workArea, '16:9')).toEqual({ x: 100, y: 50, width: 889, height: 500 })
     expect(normalizeViewerWindowBounds({ x: -50, y: -50, width: 900, height: 400 }, workArea, 'free')).toEqual({ x: 100, y: 50, width: 900, height: 400 })
   })
+
+  it('permits FR2 over the Windows taskbar while keeping it inside display bounds', () => {
+    const monitorBounds = { x: 0, y: 0, width: 1920, height: 1080 }
+    expect(normalizeViewerWindowBounds({ x: 1200, y: 900, width: 900, height: 300 }, monitorBounds, 'free')).toEqual({ x: 1020, y: 780, width: 900, height: 300 })
+  })
 })
