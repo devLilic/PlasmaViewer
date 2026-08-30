@@ -1,8 +1,21 @@
 # Development Workflow
 
+## Operational Task Registry
+
+Repository work is coordinated through the following live documents:
+
+1. `AGENTS.md` in the repository root;
+2. `docs/00_WORKING_RULES.md`;
+3. `docs/TASK_INDEX.md`;
+4. the linked brief for the single task marked `In progress` in `docs/task-briefs/`.
+
+The active brief defines the implementation scope, dependencies, acceptance criteria and focused checks. `docs/TASK_STATUS.md` archives completed results and blockers. `docs/PLASMA_VIEWER_PROTOCOL.md` documents only behavior that is already implemented and verified.
+
+Do not implement a `Pending` task, and do not activate a dependent task before its dependencies are `Completed`.
+
 ## Core Rules
 
-- Build the starter module by module.
+- Build the application module by module.
 - Within each module, work in small sequential tasks.
 - Do not move to the next task until the current task meets its Definition of Done.
 - Avoid unrelated refactors while implementing a task.
@@ -42,6 +55,8 @@
 ## Module Completion
 
 - Finish all planned tasks for the module before closing it.
+- Update `docs/TASK_INDEX.md`, `docs/TASK_STATUS.md`, the active brief and every affected current-state contract.
+- Activate the next unblocked task only after the current task satisfies its Definition of Done.
 - Create one clear commit at the end of the module.
 - Push the completed module changes to GitHub.
 - Keep commit messages specific to the module outcome.
