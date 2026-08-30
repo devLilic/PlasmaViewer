@@ -81,6 +81,15 @@ export const defaultViewerTransform: ViewerTransform = {
   flipX: false,
 }
 
+export function shouldShowFr3(enabled: boolean, defaultImage: ViewerDefaultImage | null) {
+  return enabled && defaultImage !== null
+}
+
+export function resolveViewerDisplayId(displays: ViewerDisplay[], requestedDisplayId: string | null) {
+  if (requestedDisplayId && displays.some((display) => display.id === requestedDisplayId)) return requestedDisplayId
+  return displays.find((display) => !display.primary)?.id ?? displays.find((display) => display.primary)?.id ?? null
+}
+
 export function createTransformDefaults(defaults: Partial<ViewerTransformDefaults> = {}): ViewerTransform {
   return normalizeTransform({ ...defaults, zoom: 1, panX: 0, panY: 0, flipX: false })
 }

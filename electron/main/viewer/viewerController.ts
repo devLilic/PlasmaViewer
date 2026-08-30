@@ -7,6 +7,8 @@ import { describeViewerDefaultImage, registerViewerBackgroundProtocol } from './
 import {
   createTransformDefaults,
   normalizeTransform,
+  resolveViewerDisplayId,
+  shouldShowFr3,
   type ViewerCommand,
   type ViewerDisplay,
   type ViewerState,
@@ -87,6 +89,9 @@ export class ViewerController {
     this.fr3Window.on('closed', () => { this.fr3Window = null })
     this.outputWindow.on('move', () => this.rememberOutputBounds())
     this.outputWindow.on('resize', () => this.rememberOutputBounds())
+    screen.on('display-added', () => this.handleDisplayChange())
+    screen.on('display-removed', () => this.handleDisplayChange())
+    screen.on('display-metrics-changed', () => this.handleDisplayChange())
 
     await Promise.all([this.loadView(this.controlWindow, 'control'), this.loadView(this.outputWindow, 'output'), this.loadView(this.fr3Window, 'fr3')])
     this.applyWindowSettings(this.state.window, true)
@@ -98,6 +103,7 @@ export class ViewerController {
   getControlWindow() { return this.controlWindow }
   getState() {
     this.refreshDisplays()
+    this.applyFr3Settings()
     return structuredClone(this.state)
   }
 
@@ -158,7 +164,7 @@ export class ViewerController {
 
   async chooseDefaultImage() {
     const options: OpenDialogOptions = {
-      title: 'Selectează imaginea implicită pentru FR2',
+      title: 'Selectează imaginea implicită pentru FR3',
       properties: ['openFile'],
       filters: [{ name: 'Imagini', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }],
     }
@@ -198,7 +204,7 @@ export class ViewerController {
   }
 
   showOutput() {
-    if (!this.outputWindow || (!this.state.activeImage && !this.state.defaultImage)) return this.getState()
+    if (!this.outputWindow || !this.state.activeImage) return this.getState()
     this.applyWindowSettings(this.state.window, false)
     this.outputWindow.showInactive()
     if (this.state.window.topmost) this.outputWindow.moveTop()
@@ -234,9 +240,7 @@ export class ViewerController {
       width: display.size.width,
       height: display.size.height,
     }))
-    if (!this.state.displays.some((display) => display.id === this.state.window.displayId)) {
-      this.state.window.displayId = this.state.displays.find((display) => !display.primary)?.id ?? primaryId
-    }
+    this.state.window.displayId = resolveViewerDisplayId(this.state.displays, this.state.window.displayId)
   }
 
   private applyWindowSettings(settings: ViewerWindowSettings, reposition = false) {
@@ -292,14 +296,32 @@ export class ViewerController {
   private applyFr3Settings() {
     if (!this.fr3Window) return
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
+    const defaultImage = this.describeValidDefaultImage()
+    if (this.state.defaultImage && !defaultImage) this.state.error = 'Imaginea implicită FR3 nu mai este disponibilă sau nu este validă.'
+    this.state.defaultImage = defaultImage
+    this.fr3Window.setFullScreen(false)
     this.fr3Window.setBounds(display.bounds)
-    const shouldShow = this.state.fr3.enabled && Boolean(this.state.defaultImage)
+    this.fr3Window.setFullScreen(true)
+    const shouldShow = shouldShowFr3(this.state.fr3.enabled, this.state.defaultImage)
     if (shouldShow) {
       this.fr3Window.showInactive()
       this.fr3Window.moveTop()
       if (this.outputWindow?.isVisible()) this.outputWindow.moveTop()
     } else this.fr3Window.hide()
     this.state.fr3.visible = shouldShow
+  }
+
+  private describeValidDefaultImage() {
+    if (!this.defaultImagePath || nativeImage.createFromPath(this.defaultImagePath).isEmpty()) return null
+    return describeViewerDefaultImage(this.defaultImagePath)
+  }
+
+  private handleDisplayChange() {
+    this.refreshDisplays()
+    this.applyWindowSettings(this.state.window, true)
+    this.applyFr3Settings()
+    this.persist()
+    this.broadcast()
   }
 
   private rememberCommand(id: string) {

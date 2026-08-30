@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTransformDefaults, isViewerCommand, normalizeTransform } from '../../../src/shared/viewer/contracts'
+import { createTransformDefaults, isViewerCommand, normalizeTransform, resolveViewerDisplayId, shouldShowFr3 } from '../../../src/shared/viewer/contracts'
 
 describe('PlasmaViewer protocol', () => {
   it('clamps transforms to safe ranges', () => {
@@ -31,5 +31,22 @@ describe('PlasmaViewer protocol', () => {
       id: 'command-123', version: 1, timestamp: new Date().toISOString(), type: 'transform',
       payload: { brightness: 110, contrast: 90, zoom: 1, panX: 0, panY: 0, flipX: false },
     })).toBe(true)
+  })
+
+  it('shows FR3 only when enabled and its default image is valid', () => {
+    const image = { name: 'fundal.jpg', url: 'plasma-viewer-background://current/image' }
+    expect(shouldShowFr3(false, image)).toBe(false)
+    expect(shouldShowFr3(true, null)).toBe(false)
+    expect(shouldShowFr3(true, image)).toBe(true)
+  })
+
+  it('keeps the selected display when available and otherwise chooses a deterministic fallback', () => {
+    const displays = [
+      { id: 'primary', label: 'Principal', primary: true, width: 1920, height: 1080 },
+      { id: 'secondary', label: 'Secundar', primary: false, width: 1920, height: 1080 },
+    ]
+    expect(resolveViewerDisplayId(displays, 'secondary')).toBe('secondary')
+    expect(resolveViewerDisplayId(displays, 'disconnected')).toBe('secondary')
+    expect(resolveViewerDisplayId([{ ...displays[0] }], 'disconnected')).toBe('primary')
   })
 })
