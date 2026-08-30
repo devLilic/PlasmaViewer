@@ -38,6 +38,7 @@ describe('PlasmaViewer protocol', () => {
     expect(shouldShowFr3(false, image)).toBe(false)
     expect(shouldShowFr3(true, null)).toBe(false)
     expect(shouldShowFr3(true, image)).toBe(true)
+    expect(shouldShowFr3(true, image, true)).toBe(false)
   })
 
   it('keeps the selected display when available and otherwise chooses a deterministic fallback', () => {

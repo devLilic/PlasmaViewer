@@ -51,7 +51,7 @@ function ImageLayers({ state, preview = false }: { state: ViewerState; preview?:
   const loading = Boolean(targetUrl && !loadedUrls.has(targetUrl))
   const markLoaded = (url: string) => setLoadedUrls(current => new Set(current).add(url))
 
-  if (!state.activeImage) {
+  if (!state.activeImage && !state.defaultImage) {
     return preview ? <div className="empty">Nicio imagine selectată din Plasma</div> : null
   }
 

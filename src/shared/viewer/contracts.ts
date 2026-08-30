@@ -91,8 +91,8 @@ export const defaultViewerTransform: ViewerTransform = {
   flipX: false,
 }
 
-export function shouldShowFr3(enabled: boolean, defaultImage: ViewerDefaultImage | null) {
-  return enabled && defaultImage !== null
+export function shouldShowFr3(enabled: boolean, defaultImage: ViewerDefaultImage | null, fr2Fullscreen = false) {
+  return enabled && defaultImage !== null && !fr2Fullscreen
 }
 
 export function resolveViewerDisplayId(displays: ViewerDisplay[], requestedDisplayId: string | null) {

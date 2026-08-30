@@ -217,6 +217,12 @@ export class ViewerController {
   }
 
   hide() {
+    if (this.state.window.fullscreen) {
+      this.state.activeImage = null
+      this.state.visible = false
+      this.broadcast()
+      return this.getState()
+    }
     this.outputWindow?.hide()
     this.state.visible = false
     this.broadcast()
@@ -318,7 +324,7 @@ export class ViewerController {
     this.fr3Window.setFullScreen(false)
     this.fr3Window.setBounds(display.bounds)
     this.fr3Window.setFullScreen(true)
-    const shouldShow = shouldShowFr3(this.state.fr3.enabled, this.state.defaultImage)
+    const shouldShow = shouldShowFr3(this.state.fr3.enabled, this.state.defaultImage, this.state.window.fullscreen)
     if (shouldShow) {
       this.fr3Window.showInactive()
       this.fr3Window.moveTop()
