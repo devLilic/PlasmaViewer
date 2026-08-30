@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { ViewerState, ViewerTransform, ViewerTransformDefaults } from '@/shared/viewer/contracts'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { getViewerKeyboardAdjustment, type ViewerState, type ViewerTransform, type ViewerTransformDefaults } from '@/shared/viewer/contracts'
 import './App.css'
 
 const initial: ViewerState = {
@@ -72,6 +72,38 @@ function ImageLayers({ state, preview = false }: { state: ViewerState; preview?:
 function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
   const updateTransform = (patch: Partial<ViewerTransform>) => window.viewerApi.setTransform({ ...state.transform, ...patch })
   const canDisplay = Boolean(state.activeImage)
+  const [keyboardAdjustEnabled, setKeyboardAdjustEnabled] = useState(false)
+  const keyboardCaptureRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (hidden || state.window.fullscreen) setKeyboardAdjustEnabled(false)
+  }, [hidden, state.window.fullscreen])
+
+  useEffect(() => {
+    if (!keyboardAdjustEnabled || hidden || state.window.fullscreen) return
+    const onBlur = () => setKeyboardAdjustEnabled(false)
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return
+      const adjustment = getViewerKeyboardAdjustment(event)
+      if (!adjustment) return
+      event.preventDefault()
+      if (adjustment.type === 'disable') return setKeyboardAdjustEnabled(false)
+      const current = state.window.bounds ?? { x: 0, y: 0, width: 1280, height: 720 }
+      const bounds = addBoundsPatch(current, adjustment.patch)
+      void window.viewerApi.setWindow({ bounds, boundsChangedDimension: adjustment.boundsChangedDimension })
+    }
+    window.addEventListener('blur', onBlur)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('blur', onBlur)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [keyboardAdjustEnabled, hidden, state.window.bounds, state.window.fullscreen])
+
+  const toggleKeyboardAdjust = (enabled: boolean) => {
+    setKeyboardAdjustEnabled(enabled)
+    if (enabled) requestAnimationFrame(() => keyboardCaptureRef.current?.focus())
+  }
 
   return (
     <main className="control-shell" hidden={hidden}>
@@ -124,6 +156,10 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
             <NumberField label="Sus" value={state.window.bounds?.y ?? 0} onChange={y => updateWindowBounds(state, { y })} />
             <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width })} />
             <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height })} />
+          </div>
+          <div className="keyboard-adjustment" ref={keyboardCaptureRef} tabIndex={-1} aria-label="Captură taste pentru ajustarea FR2">
+            <Toggle label="Ajustare din taste" checked={keyboardAdjustEnabled} onChange={toggleKeyboardAdjust} disabled={state.window.fullscreen} />
+            {keyboardAdjustEnabled && <p className="hint">Săgeți: poziție · Ctrl + săgeți: dimensiune · Shift: 10 px · Escape: oprește modul</p>}
           </div>
         </aside>
       </section>
@@ -199,8 +235,8 @@ function Range({ label, value, min, max, step = 1, unit, onChange }: { label: st
   return <label className="range"><span>{label}<b>{value.toFixed(step < 1 ? 2 : 0)}{unit}</b></span><input type="range" value={value} min={min} max={max} step={step} onChange={event => onChange(Number(event.target.value))} /></label>
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return <label className="toggle-row"><span>{label}</span><input type="checkbox" checked={checked} onChange={event => onChange(event.target.checked)} /><i /></label>
+function Toggle({ label, checked, onChange, disabled = false }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) {
+  return <label className="toggle-row"><span>{label}</span><input type="checkbox" checked={checked} disabled={disabled} onChange={event => onChange(event.target.checked)} /><i /></label>
 }
 
 function NumberField({ label, value, min, onChange }: { label: string; value: number; min?: number; onChange: (value: number) => void }) {
@@ -218,6 +254,20 @@ function updateWindowBounds(state: ViewerState, patch: Partial<NonNullable<Viewe
   const bounds = { x: 0, y: 0, width: 1280, height: 720, ...state.window.bounds, ...patch }
   const boundsChangedDimension = Object.hasOwn(patch, 'height') ? 'height' : 'width'
   void window.viewerApi.setWindow({ bounds, boundsChangedDimension })
+}
+
+function addBoundsPatch(bounds: NonNullable<ViewerState['window']['bounds']>, patch: Partial<NonNullable<ViewerState['window']['bounds']>>) {
+  return {
+    x: bounds.x + (patch.x ?? 0),
+    y: bounds.y + (patch.y ?? 0),
+    width: bounds.width + (patch.width ?? 0),
+    height: bounds.height + (patch.height ?? 0),
+  }
+}
+
+function isEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)
 }
 
 function imageStyle(transform: ViewerTransform) {

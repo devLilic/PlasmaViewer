@@ -44,6 +44,8 @@ button:disabled { opacity:.35; cursor:not-allowed; }
 .panel label:not(.toggle-row) { display:block; color:#969daf; font-size:12px; font-weight:650; }
 .panel select { width:100%; margin-top:7px; padding:10px; color:#eef1f7; border:1px solid #343a49; border-radius:10px; background:#1d222d; }
 .window-bounds { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.keyboard-adjustment { margin-top:14px; padding:0 12px 12px; border:1px solid #343a49; border-radius:11px; outline:none; }
+.keyboard-adjustment:focus-visible { border-color:#58a6ff; box-shadow:0 0 0 3px rgba(88,166,255,.2); }
 .number-field { display:block; color:#969daf; font-size:12px; font-weight:650; }
 .number-field input { width:100%; margin-top:7px; padding:10px; color:#eef1f7; border:1px solid #343a49; border-radius:10px; background:#1d222d; }
 .divider { height:1px; margin:20px 0; background:#292e3a; }
