@@ -127,6 +127,7 @@ function Control({ state, hidden }: { state: ViewerState; hidden: boolean }) {
           <h2>Ajustări imagine plasma.test</h2>
           <Range label="Luminozitate" value={state.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateTransform({ brightness })} />
           <Range label="Contrast" value={state.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateTransform({ contrast })} />
+          <Range label="Saturație" value={state.transform.saturation} min={0} max={200} unit="%" onChange={saturation => updateTransform({ saturation })} />
           <Range label="Zoom" value={state.transform.zoom} min={1} max={4} step={0.01} unit="×" onChange={zoom => updateTransform({ zoom })} />
           <Range label="Poziție X" value={state.transform.panX} min={-100} max={100} unit="%" onChange={panX => updateTransform({ panX })} />
           <Range label="Poziție Y" value={state.transform.panY} min={-100} max={100} unit="%" onChange={panY => updateTransform({ panY })} />
@@ -218,7 +219,7 @@ function updateWindowBounds(state: ViewerState, patch: Partial<NonNullable<Viewe
 
 function imageStyle(transform: ViewerTransform) {
   return {
-    filter: `brightness(${transform.brightness}%) contrast(${transform.contrast}%)`,
+    filter: `brightness(${transform.brightness}%) contrast(${transform.contrast}%) saturate(${transform.saturation}%)`,
     transform: `translate(${transform.panX}%, ${transform.panY}%) scale(${transform.zoom}) scaleX(${transform.flipX ? -1 : 1})`,
   }
 }
