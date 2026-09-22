@@ -112,7 +112,6 @@ export class ViewerController {
   getControlWindow() { return this.controlWindow }
   getState() {
     this.refreshDisplays()
-    this.applyFr3Settings()
     return structuredClone(this.state)
   }
 
@@ -147,7 +146,7 @@ export class ViewerController {
     this.state.lastCommandId = command.id
     this.rememberCommand(command.id)
     this.persist()
-    this.broadcast()
+    this.broadcast(command.type !== 'transform' && command.type !== 'reset-transform')
     return this.getState()
   }
 
@@ -405,9 +404,12 @@ export class ViewerController {
     if (this.processedCommands.size > 100) this.processedCommands.delete(this.processedCommands.values().next().value as string)
   }
 
-  private broadcast() {
+  private broadcast(includeFr3 = true) {
     const snapshot = this.getState()
-    for (const window of [this.controlWindow, this.outputWindow, this.fr3Window]) {
+    const windows = includeFr3
+      ? [this.controlWindow, this.outputWindow, this.fr3Window]
+      : [this.controlWindow, this.outputWindow]
+    for (const window of windows) {
       if (window && !window.isDestroyed()) window.webContents.send(viewerEventChannel, snapshot)
     }
   }
