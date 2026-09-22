@@ -139,13 +139,20 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
         <Navigation page={page} onChange={onNavigate} />
         <div className="header-actions">
           <button className={`onair-control ${state.visible ? 'live' : ''}`} disabled={!state.visible} onClick={() => void window.viewerApi.disconnectOutputs()} aria-label="Deconectează ferestrele FR2 și FR3"><i /><span>{state.visible ? 'ON AIR' : 'OFF AIR'}</span>{state.visible && <b>DECONECTEAZĂ</b>}</button>
+          <div className="window-mode-actions" role="group" aria-label="Mod afișare FR2">
+            <button type="button" className={`window-mode-button ${state.window.fullscreen ? 'active' : ''}`} aria-label="Afișează FR2 pe tot ecranul" title="Fullscreen FR2" onClick={() => void window.viewerApi.setWindow({ fullscreen: true })}>
+              <FullscreenIcon />
+            </button>
+            <button type="button" className={`window-mode-button ${!state.window.fullscreen ? 'active' : ''}`} aria-label="Afișează FR2 în fereastră" title="Windowed FR2" onClick={() => void window.viewerApi.setWindow({ fullscreen: false })}>
+              <WindowedIcon />
+            </button>
+          </div>
           <div className="output-menu">
             <button className="menu-trigger" aria-label="Setări fereastră output">Output <span aria-hidden="true">•••</span></button>
             <div className="output-menu-panel">
               <label>Monitor<select value={state.window.displayId ?? ''} onChange={(event) => window.viewerApi.setWindow({ displayId: event.target.value })}>
                 {state.displays.map(display => <option key={display.id} value={display.id}>{display.label}{display.primary ? ' — principal' : ''}</option>)}
               </select></label>
-              <Toggle label="Fullscreen" checked={state.window.fullscreen} onChange={checked => window.viewerApi.setWindow({ fullscreen: checked })} />
               <Toggle label="Întotdeauna deasupra" checked={state.window.topmost} onChange={checked => window.viewerApi.setWindow({ topmost: checked })} />
               <Toggle label="Fixează 16:9" checked={state.window.aspectMode === '16:9'} onChange={checked => window.viewerApi.setWindow({ aspectMode: checked ? '16:9' : 'free' })} />
             </div>
@@ -302,6 +309,14 @@ function Range({ label, value, min, max, step = 1, unit, onChange }: { label: st
 
 function Toggle({ label, checked, onChange, disabled = false }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) {
   return <label className="toggle-row"><span>{label}</span><input type="checkbox" checked={checked} disabled={disabled} onChange={event => onChange(event.target.checked)} /><i /></label>
+}
+
+function FullscreenIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4" /></svg>
+}
+
+function WindowedIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
 }
 
 function NumberField({ label, value, min, onChange }: { label: string; value: number; min?: number; onChange: (value: number) => void }) {

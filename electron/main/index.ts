@@ -1,4 +1,5 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
+import type { Server } from 'node:http'
 import { loadConfig } from '../../config/loadConfig'
 import { registerAppLifecycle, registerSingleInstance } from './bootstrap/appLifecycle'
 import './bootstrap/paths'
@@ -19,6 +20,7 @@ registerSingleInstance()
 
 let mainWindow: BrowserWindow | null = null
 let viewerController: ViewerController | null = null
+let viewerServer: Server | null = null
 
 async function bootstrap() {
   if (viewerController) {
@@ -31,7 +33,7 @@ async function bootstrap() {
   viewerController = new ViewerController()
   registerViewerIpc(viewerController)
   mainWindow = await viewerController.createWindows()
-  startViewerHttpServer(viewerController)
+  viewerServer = startViewerHttpServer(viewerController)
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -43,7 +45,11 @@ registerAppLifecycle(() => mainWindow, bootstrap)
 
 app.whenReady().then(bootstrap)
 
-app.on('before-quit', markViewerQuitting)
+app.on('before-quit', () => {
+  markViewerQuitting()
+  viewerServer?.close()
+  viewerServer = null
+})
 
 function registerViewerIpc(controller: ViewerController) {
   ipcMain.handle(ipcInvokeChannels.viewerGetState, () => controller.getState())

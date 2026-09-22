@@ -11,6 +11,11 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .viewer-navigation button { min-height: 31px; padding: 0 12px; color: #aebbd0; background: transparent; }
 .viewer-navigation button.active { color: #fff; background: linear-gradient(135deg, rgba(74, 125, 219, .65), rgba(47, 69, 125, .78)); box-shadow: inset 0 1px rgba(255,255,255,.17), 0 3px 9px rgba(0,0,0,.2); }
 .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; }
+.window-mode-actions { display: flex; gap: 4px; padding: 3px; border: 1px solid rgba(176, 195, 229, .22); border-radius: 12px; background: rgba(19, 27, 44, .66); }
+.window-mode-button { display: grid; width: 27px; min-height: 26px; padding: 0; place-items: center; border-radius: 8px; color: #9eabc1; background: transparent; }
+.window-mode-button:hover { color: #f5f8ff; background: rgba(88, 114, 159, .35); }
+.window-mode-button.active { color: #fff; background: linear-gradient(135deg, #1689ff, #3474ed); box-shadow: 0 3px 9px rgba(20, 116, 244, .3); }
+.window-mode-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
 .onair-control { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 10px; border: 1px solid rgba(176, 195, 229, .22); color: #9eabc1; font-size: 10px; font-weight: 850; letter-spacing: .05em; background: rgba(19, 27, 44, .66); }
 .onair-control i { width: 7px; height: 7px; border-radius: 50%; background: #68748c; }
 .onair-control b { padding-left: 7px; border-left: 1px solid rgba(255, 164, 158, .32); font-size: 9px; }

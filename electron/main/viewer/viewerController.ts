@@ -36,6 +36,7 @@ export class ViewerController {
   private state: ViewerState
   private applyingWindowSettings = false
   private fr3Suppressed = false
+  private closeConfirmationPending = false
 
   constructor() {
     const persisted = this.store.read()
@@ -87,17 +88,22 @@ export class ViewerController {
         this.hide()
       }
     })
+    this.controlWindow.on('close', (event) => {
+      if (viewerIsQuitting) return
+      event.preventDefault()
+      void this.requestApplicationQuit()
+    })
     this.controlWindow.on('closed', () => { this.controlWindow = null })
     this.outputWindow.on('closed', () => { this.outputWindow = null })
     this.fr3Window.on('closed', () => { this.fr3Window = null })
     this.outputWindow.on('move', () => this.rememberOutputBounds())
     this.outputWindow.on('resize', () => this.rememberOutputBounds())
-    screen.on('display-added', () => this.handleDisplayChange())
-    screen.on('display-removed', () => this.handleDisplayChange())
-    screen.on('display-metrics-changed', () => this.handleDisplayChange())
+    screen.on('display-added', () => void this.handleDisplayChange())
+    screen.on('display-removed', () => void this.handleDisplayChange())
+    screen.on('display-metrics-changed', () => void this.handleDisplayChange())
 
     await Promise.all([this.loadView(this.controlWindow, 'control'), this.loadView(this.outputWindow, 'output'), this.loadView(this.fr3Window, 'fr3')])
-    this.applyWindowSettings(this.state.window, true)
+    await this.applyWindowSettings(this.state.window, true)
     this.applyFr3Settings()
     this.broadcast()
     return this.controlWindow
@@ -117,7 +123,7 @@ export class ViewerController {
       this.state.activeImage = command.payload.image
       this.state.transform = normalizeTransform(command.payload.transform)
       this.state.error = null
-      this.showOutput()
+      await this.showOutput()
     } else if (command.type === 'transform') {
       this.state.transform = normalizeTransform(command.payload)
     } else if (command.type === 'hide') {
@@ -132,7 +138,7 @@ export class ViewerController {
         bounds: windowUpdate.bounds === undefined ? this.state.window.bounds : windowUpdate.bounds,
       }
       const shouldReposition = windowUpdate.displayId !== undefined || windowUpdate.fullscreen !== undefined || windowUpdate.bounds !== undefined || windowUpdate.aspectMode !== undefined
-      this.applyWindowSettings(this.state.window, shouldReposition, command.payload.boundsChangedDimension)
+      await this.applyWindowSettings(this.state.window, shouldReposition, command.payload.boundsChangedDimension)
       this.applyFr3Settings()
     } else if (command.type === 'reset-transform') {
       this.state.transform = this.state.transformDefaults
@@ -209,10 +215,10 @@ export class ViewerController {
     return this.execute({ id: randomUUID(), version: 1, timestamp: new Date().toISOString(), type: 'reset-transform' })
   }
 
-  showOutput() {
+  async showOutput() {
     if (!this.outputWindow || !this.state.activeImage) return this.getState()
     this.fr3Suppressed = false
-    this.applyWindowSettings(this.state.window, false)
+    await this.applyWindowSettings(this.state.window, false)
     this.applyFr3Settings()
     this.outputWindow.showInactive()
     if (this.state.window.topmost) this.outputWindow.moveTop()
@@ -239,6 +245,33 @@ export class ViewerController {
     return this.getState()
   }
 
+  private async requestApplicationQuit() {
+    if (this.closeConfirmationPending) return
+    this.closeConfirmationPending = true
+
+    try {
+      const hasOnAirImage = this.state.visible && this.state.activeImage !== null
+      if (hasOnAirImage && this.controlWindow) {
+        const result = await dialog.showMessageBox(this.controlWindow, {
+          type: 'warning',
+          title: 'Închide PlasmaViewer',
+          message: 'Există o imagine afișată onAIR.',
+          detail: 'Oprești onAIR și închizi complet PlasmaViewer?',
+          buttons: ['Anulează', 'Oprește onAIR și închide'],
+          defaultId: 1,
+          cancelId: 0,
+          noLink: true,
+        })
+        if (result.response !== 1) return
+        this.disconnectOutputs()
+      }
+
+      app.quit()
+    } finally {
+      this.closeConfirmationPending = false
+    }
+  }
+
   private async loadView(window: BrowserWindow, view: 'control' | 'output' | 'fr3') {
     if (VITE_DEV_SERVER_URL) {
       const url = new URL(VITE_DEV_SERVER_URL)
@@ -262,22 +295,30 @@ export class ViewerController {
     this.state.window.displayId = resolveViewerDisplayId(this.state.displays, this.state.window.displayId)
   }
 
-  private applyWindowSettings(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width') {
+  private async applyWindowSettings(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width') {
     if (!this.outputWindow) return
     this.refreshDisplays()
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
     this.applyingWindowSettings = true
     try {
       this.outputWindow.setAlwaysOnTop(settings.topmost, settings.topmost ? 'screen-saver' : 'normal')
-      this.outputWindow.setFullScreen(false)
-      this.outputWindow.setMovable(!settings.fullscreen)
       if (settings.fullscreen) {
+        this.outputWindow.setFullScreen(false)
+        this.outputWindow.setMovable(false)
         this.outputWindow.setBounds(display.bounds)
         this.outputWindow.setFullScreen(true)
         return
       }
 
       const bounds = normalizeViewerWindowBounds(settings.bounds, display.bounds, settings.aspectMode, changedDimension)
+      if (this.outputWindow.isFullScreen()) {
+        // Preserve the saved normal bounds before leaving fullscreen, then apply
+        // them again after Electron completes its native fullscreen transition.
+        this.outputWindow.setBounds(bounds)
+        await leaveFullScreen(this.outputWindow)
+        await nextWindowTick()
+      }
+      this.outputWindow.setMovable(true)
       if (reposition || !sameBounds(this.outputWindow.getBounds(), bounds)) this.outputWindow.setBounds(bounds)
       this.state.window.bounds = bounds
     } finally {
@@ -351,9 +392,9 @@ export class ViewerController {
     return describeViewerDefaultImage(this.defaultImagePath)
   }
 
-  private handleDisplayChange() {
+  private async handleDisplayChange() {
     this.refreshDisplays()
-    this.applyWindowSettings(this.state.window, true)
+    await this.applyWindowSettings(this.state.window, true)
     this.applyFr3Settings()
     this.persist()
     this.broadcast()
@@ -374,4 +415,23 @@ export class ViewerController {
 
 function sameBounds(first: ViewerWindowBounds | null, second: Electron.Rectangle) {
   return first?.x === second.x && first.y === second.y && first.width === second.width && first.height === second.height
+}
+
+function leaveFullScreen(window: BrowserWindow) {
+  if (!window.isFullScreen()) return Promise.resolve()
+
+  return new Promise<void>((resolve) => {
+    const finish = () => {
+      clearTimeout(timeout)
+      window.removeListener('leave-full-screen', finish)
+      resolve()
+    }
+    const timeout = setTimeout(finish, 1_000)
+    window.once('leave-full-screen', finish)
+    window.setFullScreen(false)
+  })
+}
+
+function nextWindowTick() {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0))
 }
