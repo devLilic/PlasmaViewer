@@ -34,11 +34,19 @@ describe('ipc contracts', () => {
       'viewer:show-output',
       'viewer:hide-output',
       'viewer:disconnect-outputs',
+      'viewer:import-backgrounds',
+      'viewer:rename-background',
+      'viewer:remove-background',
+      'viewer:select-background',
+      'viewer:show-fr3',
+      'viewer:hide-fr3',
+      'viewer:reset-fr3-transform',
+      'viewer:set-output-order',
     ])
     expect(new Set(channels).size).toBe(channels.length)
   })
 
-  it('defines unique renderer event channels for app and update notifications', () => {
+  it('defines unique renderer event channels for app, update, and viewer notifications', () => {
     const channels = Object.values(ipcEventChannels)
 
     expect(channels).toEqual([

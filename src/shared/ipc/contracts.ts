@@ -9,7 +9,7 @@ import type {
 } from '../licensing/contracts'
 import type { AppSettings, SettingsKey } from '../settings/types'
 import type { UpdateErrorPayload, UpdateStateEvent, VersionInfo } from '../types/update'
-import type { ViewerFr3Settings, ViewerState, ViewerTransform, ViewerTransformDefaults, ViewerWindowUpdate } from '../viewer/contracts'
+import type { ViewerFr3Update, ViewerOutputOrder, ViewerState, ViewerTransform, ViewerTransformDefaults, ViewerWindowUpdate } from '../viewer/contracts'
 
 export const ipcInvokeChannels = {
   appGetInfo: 'app:get-info',
@@ -40,6 +40,14 @@ export const ipcInvokeChannels = {
   viewerShowOutput: 'viewer:show-output',
   viewerHideOutput: 'viewer:hide-output',
   viewerDisconnectOutputs: 'viewer:disconnect-outputs',
+  viewerImportBackgrounds: 'viewer:import-backgrounds',
+  viewerRenameBackground: 'viewer:rename-background',
+  viewerRemoveBackground: 'viewer:remove-background',
+  viewerSelectBackground: 'viewer:select-background',
+  viewerShowFr3: 'viewer:show-fr3',
+  viewerHideFr3: 'viewer:hide-fr3',
+  viewerResetFr3Transform: 'viewer:reset-fr3-transform',
+  viewerSetOutputOrder: 'viewer:set-output-order',
 } as const
 
 export const ipcEventChannels = {
@@ -187,7 +195,7 @@ export interface IpcInvokeContract {
   [ipcInvokeChannels.viewerGetState]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerSetTransform]: { request: ViewerTransform; response: ViewerState }
   [ipcInvokeChannels.viewerSetTransformDefaults]: { request: ViewerTransformDefaults; response: ViewerState }
-  [ipcInvokeChannels.viewerSetFr3]: { request: Pick<ViewerFr3Settings, 'enabled' | 'transform'>; response: ViewerState }
+  [ipcInvokeChannels.viewerSetFr3]: { request: ViewerFr3Update; response: ViewerState }
   [ipcInvokeChannels.viewerSetWindow]: { request: ViewerWindowUpdate; response: ViewerState }
   [ipcInvokeChannels.viewerChooseDefaultImage]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerClearDefaultImage]: { request: void; response: ViewerState }
@@ -195,6 +203,14 @@ export interface IpcInvokeContract {
   [ipcInvokeChannels.viewerShowOutput]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerHideOutput]: { request: void; response: ViewerState }
   [ipcInvokeChannels.viewerDisconnectOutputs]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerImportBackgrounds]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerRenameBackground]: { request: { id: string; name: string }; response: ViewerState }
+  [ipcInvokeChannels.viewerRemoveBackground]: { request: { id: string }; response: ViewerState }
+  [ipcInvokeChannels.viewerSelectBackground]: { request: { id: string }; response: ViewerState }
+  [ipcInvokeChannels.viewerShowFr3]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerHideFr3]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerResetFr3Transform]: { request: void; response: ViewerState }
+  [ipcInvokeChannels.viewerSetOutputOrder]: { request: ViewerOutputOrder; response: ViewerState }
 }
 
 export interface IpcEventContract {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTransformDefaults, isViewerCommand, maxViewerPanForZoom, normalizeTransform, normalizeViewerWindowBounds, resolveViewerDisplayId, shouldShowFr3 } from '../../../src/shared/viewer/contracts'
+import { createTransformDefaults, isViewerCommand, maxViewerPanForZoom, normalizeOutputOrder, normalizeTransform, normalizeViewerWindowBounds, resolveViewerDisplayId, shouldShowFr3 } from '../../../src/shared/viewer/contracts'
 
 describe('PlasmaViewer protocol', () => {
   it('clamps transforms to safe ranges', () => {
@@ -52,6 +52,14 @@ describe('PlasmaViewer protocol', () => {
     expect(shouldShowFr3(true, null)).toBe(false)
     expect(shouldShowFr3(true, image)).toBe(true)
     expect(shouldShowFr3(true, image, true)).toBe(false)
+    expect(shouldShowFr3(true, image, true, true, false)).toBe(true)
+    expect(shouldShowFr3(true, image, true, true, true)).toBe(false)
+  })
+
+  it('normalizes output stacking order to finite integer levels from zero to one hundred', () => {
+    expect(normalizeOutputOrder({ fr2: 3.6, fr3: -8 })).toEqual({ fr2: 4, fr3: 0 })
+    expect(normalizeOutputOrder({ fr2: 120, fr3: 'invalid' })).toEqual({ fr2: 100, fr3: 1 })
+    expect(normalizeOutputOrder(null)).toEqual({ fr2: 3, fr3: 1 })
   })
 
   it('keeps the selected display when available and otherwise chooses a deterministic fallback', () => {

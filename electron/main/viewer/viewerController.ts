@@ -1,16 +1,22 @@
 import { app, BrowserWindow, dialog, nativeImage, net, screen, type OpenDialogOptions } from 'electron'
 import { randomUUID } from 'node:crypto'
+import path from 'node:path'
 import { createSecureBrowserWindow } from '../security/windowFactory'
 import { indexHtmlPath, VITE_DEV_SERVER_URL } from '../bootstrap/paths'
 import { createViewerStateStore } from './viewerStateStore'
-import { describeViewerDefaultImage, registerViewerBackgroundProtocol } from './viewerBackgroundProtocol'
+import { registerViewerBackgroundProtocol } from './viewerBackgroundProtocol'
+import { createBackgroundLibrary } from './viewerBackgroundLibrary'
+import { viewerMessage } from './viewerMessages'
 import {
   createTransformDefaults,
+  normalizeOutputOrder,
   normalizeViewerWindowBounds,
   normalizeTransform,
   resolveViewerDisplayId,
   shouldShowFr3,
   type ViewerCommand,
+  type ViewerFr3Update,
+  type ViewerOutputOrder,
   type ViewerDisplay,
   type ViewerState,
   type ViewerTransformDefaults,
@@ -32,35 +38,50 @@ export class ViewerController {
   private fr3Window: BrowserWindow | null = null
   private readonly processedCommands = new Set<string>()
   private readonly store = createViewerStateStore(app.getPath('userData'))
-  private defaultImagePath: string | null
+  private readonly backgrounds: ReturnType<typeof createBackgroundLibrary>
   private state: ViewerState
   private applyingWindowSettings = false
   private fr3Suppressed = false
   private closeConfirmationPending = false
+  private appliedNativeOrderSignature: string | null = null
 
   constructor() {
-    const persisted = this.store.read()
-    const defaultImage = describeViewerDefaultImage(persisted.defaultImagePath)
-    this.defaultImagePath = defaultImage ? persisted.defaultImagePath : null
+    const persisted = this.store.read(screen.getAllDisplays().map(display => String(display.id)))
+    this.backgrounds = createBackgroundLibrary(path.join(app.getPath('userData'), 'backgrounds'), filePath => !nativeImage.createFromPath(filePath).isEmpty(), persisted.backgrounds, viewerMessage)
+    let migrationError: string | null = null
+    if (!persisted.backgrounds.length && persisted.defaultImagePath) {
+      this.store.backupLegacySettings()
+      try {
+        const [imported] = this.backgrounds.importImages([persisted.defaultImagePath])
+        persisted.fr3.selectedBackgroundId = imported.id
+        persisted.fr3.activeBackgroundId = imported.id
+      } catch {
+        migrationError = viewerMessage('lostBackground')
+      }
+    }
     this.state = {
       visible: false,
       activeImage: null,
-      defaultImage,
+      defaultImage: null,
+      backgrounds: this.backgrounds.describe(),
       transformDefaults: createTransformDefaults(persisted.transformDefaults),
       transform: createTransformDefaults(persisted.transformDefaults),
       window: persisted.window,
       fr3: persisted.fr3,
+      outputOrder: normalizeOutputOrder(persisted.outputOrder),
       displays: [],
       lastCommandId: null,
-      error: null,
+      error: migrationError,
     }
-    registerViewerBackgroundProtocol(() => this.defaultImagePath)
+    this.refreshActiveBackground()
+    this.persist()
+    registerViewerBackgroundProtocol(id => this.backgrounds.resolvePath(id ?? this.state.fr3.activeBackgroundId ?? ''))
   }
 
   async createWindows() {
     this.refreshDisplays()
     this.controlWindow = createSecureBrowserWindow({
-      title: 'PlasmaViewer Control',
+      title: 'PlasmaVu',
       width: 1120,
       height: 780,
       minWidth: 860,
@@ -136,6 +157,11 @@ export class ViewerController {
         ...windowUpdate,
         bounds: windowUpdate.bounds === undefined ? this.state.window.bounds : windowUpdate.bounds,
       }
+      if (typeof windowUpdate.displayId === 'string') this.state.fr3.displayId = windowUpdate.displayId
+      else if (windowUpdate.displayId === null) this.state.fr3.displayId = String(screen.getPrimaryDisplay().id)
+      if (windowUpdate.displayId !== undefined && typeof windowUpdate.displayId === 'string') {
+        this.state.fr3.displayId = windowUpdate.displayId
+      }
       const shouldReposition = windowUpdate.displayId !== undefined || windowUpdate.fullscreen !== undefined || windowUpdate.bounds !== undefined || windowUpdate.aspectMode !== undefined
       await this.applyWindowSettings(this.state.window, shouldReposition, command.payload.boundsChangedDimension)
       this.applyFr3Settings()
@@ -146,7 +172,7 @@ export class ViewerController {
     this.state.lastCommandId = command.id
     this.rememberCommand(command.id)
     this.persist()
-    this.broadcast(command.type !== 'transform' && command.type !== 'reset-transform')
+    this.broadcast(command.type === 'transform' || command.type === 'reset-transform' ? 'fr2' : 'all')
     return this.getState()
   }
 
@@ -161,11 +187,36 @@ export class ViewerController {
     return this.getState()
   }
 
-  updateFr3(value: Pick<ViewerState['fr3'], 'enabled' | 'transform'>) {
-    this.state.fr3 = { ...this.state.fr3, enabled: Boolean(value.enabled), transform: createTransformDefaults(value.transform), visible: false }
-    this.applyFr3Settings()
+  updateOutputOrder(value: ViewerOutputOrder) {
+    const wasFr2Above = this.isFr2AboveFr3()
+    this.state.outputOrder = normalizeOutputOrder(value)
+    if (wasFr2Above !== this.isFr2AboveFr3()) this.applyFr3Settings()
     this.persist()
-    this.broadcast()
+    this.broadcast('control')
+    return this.getState()
+  }
+
+  async updateFr3(value: ViewerFr3Update) {
+    if (!value || typeof value !== 'object') throw new Error(viewerMessage('invalidFr3'))
+    const structural = value.enabled !== undefined || value.displayId !== undefined
+    const displayChanged = value.displayId !== undefined
+    this.state.fr3 = { ...this.state.fr3,
+      enabled: typeof value.enabled === 'boolean' ? value.enabled : this.state.fr3.enabled,
+      displayId: typeof value.displayId === 'string' || value.displayId === null ? value.displayId : this.state.fr3.displayId,
+      transform: normalizeTransform({ ...this.state.fr3.transform, ...(value.transform && typeof value.transform === 'object' ? value.transform : {}) }) }
+    if (displayChanged) {
+      this.state.window.displayId = value.displayId === null
+        ? String(screen.getPrimaryDisplay().id)
+        : value.displayId ?? this.state.window.displayId
+    }
+    if (value.enabled === true) this.fr3Suppressed = false
+    if (structural) {
+      this.refreshDisplays()
+      if (displayChanged) await this.applyWindowSettings(this.state.window, true)
+      this.applyFr3Settings()
+    }
+    this.persist()
+    this.broadcast('fr3')
     return this.getState()
   }
 
@@ -174,40 +225,125 @@ export class ViewerController {
   }
 
   async chooseDefaultImage() {
+    await this.importBackgrounds()
+    return this.getState()
+  }
+
+  async importBackgrounds() {
     const options: OpenDialogOptions = {
-      title: 'Selectează imaginea implicită pentru FR3',
-      properties: ['openFile'],
-      filters: [{ name: 'Imagini', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }],
+      title: viewerMessage('importTitle'),
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: viewerMessage('images'), extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }],
     }
     const result = this.controlWindow
       ? await dialog.showOpenDialog(this.controlWindow, options)
       : await dialog.showOpenDialog(options)
     if (result.canceled || !result.filePaths[0]) return this.getState()
 
-    const imagePath = result.filePaths[0]
-    if (nativeImage.createFromPath(imagePath).isEmpty()) {
-      this.state.error = 'Fișierul selectat nu este o imagine validă.'
-      this.broadcast()
-      return this.getState()
-    }
-
-    this.defaultImagePath = imagePath
-    this.state.defaultImage = describeViewerDefaultImage(imagePath)
+    const imported = this.backgrounds.importImages(result.filePaths)
+    this.state.backgrounds = this.backgrounds.describe()
+    this.state.fr3.selectedBackgroundId = imported[0]?.id ?? this.state.fr3.selectedBackgroundId
     this.state.error = null
     this.persist()
-    this.applyFr3Settings()
-    this.broadcast()
+    this.broadcast('control')
     return this.getState()
   }
 
-  clearDefaultImage() {
-    this.defaultImagePath = null
-    this.state.defaultImage = null
+  async clearDefaultImage() {
+    if (this.state.fr3.activeBackgroundId) return this.removeBackground(this.state.fr3.activeBackgroundId)
+    return this.getState()
+  }
+
+  renameBackground(id: string, name: string) {
+    this.backgrounds.rename(id, name)
+    this.state.backgrounds = this.backgrounds.describe()
+    this.refreshActiveBackground()
+    this.persist()
+    this.broadcast('control')
+    return this.getState()
+  }
+
+  async removeBackground(id: string) {
+    const entry = this.backgrounds.entries().find(item => item.id === id)
+    if (!entry) throw new Error(viewerMessage('missingBackground'))
+    this.assertBackgroundNotLive(id)
+
+    const options = {
+      type: 'warning' as const,
+      title: viewerMessage('removeBackgroundTitle'),
+      message: viewerMessage('removeBackgroundMessage', { name: entry.name }),
+      buttons: [viewerMessage('cancel'), viewerMessage('removeBackgroundConfirm')],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    }
+    const result = this.controlWindow
+      ? await dialog.showMessageBox(this.controlWindow, options)
+      : await dialog.showMessageBox(options)
+    if (result.response !== 1) return this.getState()
+
+    this.assertBackgroundNotLive(id)
+    this.backgrounds.remove(id)
+    this.state.backgrounds = this.backgrounds.describe()
+    if (this.state.fr3.selectedBackgroundId === id) this.state.fr3.selectedBackgroundId = this.state.backgrounds[0]?.id ?? null
+    if (this.state.fr3.activeBackgroundId === id) {
+      this.state.fr3.activeBackgroundId = null
+      this.applyFr3Settings()
+    }
+    this.persist()
+    this.broadcast('fr3')
+    return this.getState()
+  }
+
+  private assertBackgroundNotLive(id: string) {
+    if (this.state.fr3.enabled && !this.fr3Suppressed && this.state.fr3.activeBackgroundId === id) {
+      throw new Error(viewerMessage('liveRemoval'))
+    }
+  }
+
+  selectBackground(id: string) {
+    if (!this.backgrounds.available(id)) throw new Error(viewerMessage('unavailableBackground'))
+    this.state.fr3.selectedBackgroundId = id
     this.state.error = null
     this.persist()
-    this.applyFr3Settings()
-    this.broadcast()
+    this.broadcast('control')
     return this.getState()
+  }
+
+  showFr3() {
+    const id = this.state.fr3.selectedBackgroundId
+    if (!id || !this.backgrounds.available(id)) throw new Error(viewerMessage('selectBackground'))
+    this.state.fr3.activeBackgroundId = id
+    this.state.fr3.enabled = true
+    this.fr3Suppressed = false
+    this.state.error = null
+    this.applyFr3Settings()
+    this.persist()
+    this.broadcast('fr3')
+    return this.getState()
+  }
+
+  hideFr3() {
+    this.state.fr3.enabled = false
+    this.applyFr3Settings()
+    this.persist()
+    this.broadcast('fr3')
+    return this.getState()
+  }
+
+  resetFr3Transform() {
+    return this.updateFr3({ transform: normalizeTransform({}) })
+  }
+
+  private refreshActiveBackground() {
+    const id = this.state.fr3.activeBackgroundId
+    const descriptor = this.state.backgrounds.find(item => item.id === id && item.available)
+    this.state.defaultImage = descriptor ? { name: descriptor.name, url: descriptor.url } : null
+  }
+
+  private refreshBackgrounds() {
+    this.state.backgrounds = this.backgrounds.describe()
+    this.refreshActiveBackground()
   }
 
   resetTransform() {
@@ -218,17 +354,21 @@ export class ViewerController {
     if (!this.outputWindow || !this.state.activeImage) return this.getState()
     this.fr3Suppressed = false
     await this.applyWindowSettings(this.state.window, false)
-    this.applyFr3Settings()
-    this.outputWindow.showInactive()
-    if (this.state.window.topmost) this.outputWindow.moveTop()
     this.state.visible = true
+    this.applyFr3Settings()
+    if (!this.outputWindow.isVisible()) {
+      this.outputWindow.showInactive()
+    }
+    this.applyNativeOutputOrder()
     this.broadcast()
     return this.getState()
   }
 
   hide() {
+    this.outputWindow?.hide()
     this.state.activeImage = null
     this.state.visible = false
+    this.applyFr3Settings()
     this.broadcast()
     return this.getState()
   }
@@ -249,14 +389,14 @@ export class ViewerController {
     this.closeConfirmationPending = true
 
     try {
-      const hasOnAirImage = this.state.visible && this.state.activeImage !== null
+      const hasOnAirImage = (this.state.visible && this.state.activeImage !== null) || this.state.fr3.visible
       if (hasOnAirImage && this.controlWindow) {
         const result = await dialog.showMessageBox(this.controlWindow, {
           type: 'warning',
-          title: 'Închide PlasmaViewer',
-          message: 'Există o imagine afișată onAIR.',
-          detail: 'Oprești onAIR și închizi complet PlasmaViewer?',
-          buttons: ['Anulează', 'Oprește onAIR și închide'],
+          title: viewerMessage('quitTitle'),
+          message: viewerMessage('quitMessage'),
+          detail: viewerMessage('quitDetail'),
+          buttons: [viewerMessage('cancel'), viewerMessage('quitConfirm')],
           defaultId: 1,
           cancelId: 0,
           noLink: true,
@@ -291,7 +431,13 @@ export class ViewerController {
       width: display.size.width,
       height: display.size.height,
     }))
-    this.state.window.displayId = resolveViewerDisplayId(this.state.displays, this.state.window.displayId)
+    const hasDisplay = (id: string | null) => id !== null && this.state.displays.some(display => display.id === id)
+    const requestedDisplayId = hasDisplay(this.state.window.displayId)
+      ? this.state.window.displayId
+      : hasDisplay(this.state.fr3.displayId) ? this.state.fr3.displayId : null
+    const commonDisplayId = resolveViewerDisplayId(this.state.displays, requestedDisplayId)
+    this.state.window.displayId = commonDisplayId
+    this.state.fr3.displayId = commonDisplayId
   }
 
   private async applyWindowSettings(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width') {
@@ -300,12 +446,14 @@ export class ViewerController {
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
     this.applyingWindowSettings = true
     try {
-      this.outputWindow.setAlwaysOnTop(settings.topmost, settings.topmost ? 'screen-saver' : 'normal')
+      if (this.outputWindow.isAlwaysOnTop() !== settings.topmost) this.outputWindow.setAlwaysOnTop(settings.topmost, settings.topmost ? 'screen-saver' : 'normal')
       if (settings.fullscreen) {
-        this.outputWindow.setFullScreen(false)
-        this.outputWindow.setMovable(false)
-        this.outputWindow.setBounds(display.bounds)
-        this.outputWindow.setFullScreen(true)
+        if (!this.outputWindow.isFullScreen() || !sameBounds(this.outputWindow.getBounds(), display.bounds)) {
+          if (this.outputWindow.isFullScreen()) await leaveFullScreen(this.outputWindow)
+          this.outputWindow.setMovable(false)
+          this.outputWindow.setBounds(display.bounds)
+          this.outputWindow.setFullScreen(true)
+        }
         return
       }
 
@@ -318,7 +466,7 @@ export class ViewerController {
         await nextWindowTick()
       }
       this.outputWindow.setMovable(true)
-      if (reposition || !sameBounds(this.outputWindow.getBounds(), bounds)) this.outputWindow.setBounds(bounds)
+      if (!sameBounds(this.outputWindow.getBounds(), bounds)) this.outputWindow.setBounds(bounds)
       this.state.window.bounds = bounds
     } finally {
       this.applyingWindowSettings = false
@@ -358,37 +506,70 @@ export class ViewerController {
   }
 
   private persist() {
-    this.store.write({ window: this.state.window, defaultImagePath: this.defaultImagePath, transformDefaults: {
+    this.store.write({ window: this.state.window, defaultImagePath: this.backgrounds.resolvePath(this.state.fr3.activeBackgroundId ?? ''), backgrounds: this.backgrounds.entries(), transformDefaults: {
       brightness: this.state.transformDefaults.brightness,
       contrast: this.state.transformDefaults.contrast,
       saturation: this.state.transformDefaults.saturation,
-    }, fr3: { ...this.state.fr3, visible: false } })
+    }, fr3: { ...this.state.fr3, visible: false }, outputOrder: this.state.outputOrder })
   }
 
   private applyFr3Settings() {
     if (!this.fr3Window) return
+    this.refreshDisplays()
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
-    const defaultImage = this.describeValidDefaultImage()
-    if (this.state.defaultImage && !defaultImage) this.state.error = 'Imaginea implicită FR3 nu mai este disponibilă sau nu este validă.'
-    this.state.defaultImage = defaultImage
+    this.refreshBackgrounds()
+    if (this.state.fr3.activeBackgroundId && !this.state.defaultImage) this.state.error = viewerMessage('lostBackground')
     const requiresFullscreenUpdate = !this.fr3Window.isFullScreen() || !sameBounds(this.fr3Window.getBounds(), display.bounds)
     if (requiresFullscreenUpdate) {
       if (this.fr3Window.isFullScreen()) this.fr3Window.setFullScreen(false)
       this.fr3Window.setBounds(display.bounds)
       this.fr3Window.setFullScreen(true)
     }
-    const shouldShow = !this.fr3Suppressed && shouldShowFr3(this.state.fr3.enabled, this.state.defaultImage, this.state.window.fullscreen)
+    const fr3IsAlwaysOnTop = !this.isFr2AboveFr3() && this.state.window.topmost
+    if (this.fr3Window.isAlwaysOnTop() !== fr3IsAlwaysOnTop) {
+      this.fr3Window.setAlwaysOnTop(fr3IsAlwaysOnTop, fr3IsAlwaysOnTop ? 'screen-saver' : 'normal')
+    }
+    const shouldShow = !this.fr3Suppressed && shouldShowFr3(
+      this.state.fr3.enabled,
+      this.state.defaultImage,
+      this.state.window.fullscreen && this.state.visible,
+      true,
+      this.isFr2AboveFr3(),
+    )
+    const wasVisible = this.fr3Window.isVisible()
     if (shouldShow) {
-      this.fr3Window.showInactive()
-      this.fr3Window.moveTop()
-      if (this.outputWindow?.isVisible()) this.outputWindow.moveTop()
-    } else this.fr3Window.hide()
+      if (!wasVisible) this.fr3Window.showInactive()
+    } else if (wasVisible) this.fr3Window.hide()
     this.state.fr3.visible = shouldShow
+    if (wasVisible !== shouldShow || requiresFullscreenUpdate) this.appliedNativeOrderSignature = null
+    this.applyNativeOutputOrder()
   }
 
-  private describeValidDefaultImage() {
-    if (!this.defaultImagePath || nativeImage.createFromPath(this.defaultImagePath).isEmpty()) return null
-    return describeViewerDefaultImage(this.defaultImagePath)
+  private isFr2AboveFr3() {
+    return this.state.outputOrder.fr2 >= this.state.outputOrder.fr3
+  }
+
+  private applyNativeOutputOrder() {
+    if (!this.outputWindow || !this.fr3Window) return
+    const fr2Visible = this.outputWindow.isVisible()
+    const fr3Visible = this.fr3Window.isVisible()
+    const fr2AboveFr3 = this.isFr2AboveFr3()
+    const signature = [
+      this.state.window.displayId,
+      this.state.window.fullscreen,
+      this.state.window.topmost,
+      fr2AboveFr3,
+      fr2Visible,
+      fr3Visible,
+    ].join('|')
+    if (signature === this.appliedNativeOrderSignature) return
+    this.appliedNativeOrderSignature = signature
+
+    if (fr2Visible && fr3Visible) {
+      if (fr2AboveFr3) this.outputWindow.moveTop()
+      else this.fr3Window.moveTop()
+    } else if (fr2Visible) this.outputWindow.moveTop()
+    else if (fr3Visible) this.fr3Window.moveTop()
   }
 
   private async handleDisplayChange() {
@@ -404,11 +585,9 @@ export class ViewerController {
     if (this.processedCommands.size > 100) this.processedCommands.delete(this.processedCommands.values().next().value as string)
   }
 
-  private broadcast(includeFr3 = true) {
+  private broadcast(target: 'all' | 'fr2' | 'fr3' | 'control' = 'all') {
     const snapshot = this.getState()
-    const windows = includeFr3
-      ? [this.controlWindow, this.outputWindow, this.fr3Window]
-      : [this.controlWindow, this.outputWindow]
+    const windows = [this.controlWindow, ...(target === 'all' || target === 'fr2' ? [this.outputWindow] : []), ...(target === 'all' || target === 'fr3' ? [this.fr3Window] : [])]
     for (const window of windows) {
       if (window && !window.isDestroyed()) window.webContents.send(viewerEventChannel, snapshot)
     }

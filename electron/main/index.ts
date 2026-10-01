@@ -6,7 +6,7 @@ import './bootstrap/paths'
 import { registerMainModuleRegistry } from './bootstrap/registerMainModuleRegistry'
 import { bootstrapAppProtection } from './security/appProtection'
 import { applyAppSecurity } from './security/appSecurity'
-import { ipcInvokeChannels } from '../../src/shared/ipc/contracts'
+import { ipcInvokeChannels, type IpcInvokeContract } from '../../src/shared/ipc/contracts'
 import { markViewerQuitting, ViewerController } from './viewer/viewerController'
 import { startViewerHttpServer } from './viewer/viewerHttpServer'
 import { registerViewerBackgroundScheme } from './viewer/viewerBackgroundProtocol'
@@ -63,4 +63,12 @@ function registerViewerIpc(controller: ViewerController) {
   ipcMain.handle(ipcInvokeChannels.viewerShowOutput, () => controller.showOutput())
   ipcMain.handle(ipcInvokeChannels.viewerHideOutput, () => controller.hide())
   ipcMain.handle(ipcInvokeChannels.viewerDisconnectOutputs, () => controller.disconnectOutputs())
+  ipcMain.handle(ipcInvokeChannels.viewerImportBackgrounds, () => controller.importBackgrounds())
+  ipcMain.handle(ipcInvokeChannels.viewerRenameBackground, (_event, payload: IpcInvokeContract[typeof ipcInvokeChannels.viewerRenameBackground]['request']) => controller.renameBackground(payload.id, payload.name))
+  ipcMain.handle(ipcInvokeChannels.viewerRemoveBackground, (_event, payload: IpcInvokeContract[typeof ipcInvokeChannels.viewerRemoveBackground]['request']) => controller.removeBackground(payload.id))
+  ipcMain.handle(ipcInvokeChannels.viewerSelectBackground, (_event, payload: IpcInvokeContract[typeof ipcInvokeChannels.viewerSelectBackground]['request']) => controller.selectBackground(payload.id))
+  ipcMain.handle(ipcInvokeChannels.viewerShowFr3, () => controller.showFr3())
+  ipcMain.handle(ipcInvokeChannels.viewerHideFr3, () => controller.hideFr3())
+  ipcMain.handle(ipcInvokeChannels.viewerResetFr3Transform, () => controller.resetFr3Transform())
+  ipcMain.handle(ipcInvokeChannels.viewerSetOutputOrder, (_event, value: IpcInvokeContract[typeof ipcInvokeChannels.viewerSetOutputOrder]['request']) => controller.updateOutputOrder(value))
 }

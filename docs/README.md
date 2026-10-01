@@ -18,11 +18,13 @@ Pentru lucru curent se citesc numai regulile, indexul și brief-ul taskului `In 
 
 | Document | Rol |
 |---|---|
-| [PLASMA_VIEWER_PROTOCOL.md](PLASMA_VIEWER_PROTOCOL.md) | Protocolul local și comportamentul Viewer implementat în codul curent. |
+| [PLASMA_VIEWER_PROTOCOL.md](PLASMA_VIEWER_PROTOCOL.md) | Protocolul HTTP v1 și comportamentul implementat pentru FR2, FR3, galeria persistentă, monitorul comun și ordinea ferestrelor. |
 | [LICENSING_BACKEND_API_CONTRACT.md](LICENSING_BACKEND_API_CONTRACT.md) | Contractul API pentru licensing. |
 | [LICENSING_DEVICE_BINDING.md](LICENSING_DEVICE_BINDING.md) | Regulile de legare a licenței de dispozitiv și instalare. |
 
 `PLASMA_VIEWER_PROTOCOL.md` nu descrie funcționalități doar planificate. El se actualizează în același task care livrează schimbarea de comportament.
+
+Comenzile v1 folosite de `plasma.test` rămân compatibile; documentul protocolului precizează efectul actual al fiecărei comenzi asupra FR2 și FR3.
 
 ## Ghiduri și reguli de proiect
 

@@ -19,7 +19,7 @@ import type { LicenseEntitlementsResult } from '@/shared/licensing/contracts'
 import type { UpdatePreferences, UiPreferences } from '@/shared/settings/types'
 import type { ProgressInfo } from 'electron-updater'
 import type { UpdateErrorPayload, UpdateStateEvent, VersionInfo } from './update'
-import type { ViewerFr3Settings, ViewerState, ViewerTransform, ViewerTransformDefaults, ViewerWindowUpdate } from '@/shared/viewer/contracts'
+import type { ViewerFr3Update, ViewerOutputOrder, ViewerState, ViewerTransform, ViewerTransformDefaults, ViewerWindowUpdate } from '@/shared/viewer/contracts'
 
 declare global {
   interface Window {
@@ -68,7 +68,7 @@ declare global {
       getState: () => Promise<ViewerState>
       setTransform: (value: ViewerTransform) => Promise<ViewerState>
       setTransformDefaults: (value: ViewerTransformDefaults) => Promise<ViewerState>
-      setFr3: (value: Pick<ViewerFr3Settings, 'enabled' | 'transform'>) => Promise<ViewerState>
+      setFr3: (value: ViewerFr3Update) => Promise<ViewerState>
       setWindow: (value: ViewerWindowUpdate) => Promise<ViewerState>
       chooseDefaultImage: () => Promise<ViewerState>
       clearDefaultImage: () => Promise<ViewerState>
@@ -76,6 +76,14 @@ declare global {
       showOutput: () => Promise<ViewerState>
       hideOutput: () => Promise<ViewerState>
       disconnectOutputs: () => Promise<ViewerState>
+      importBackgrounds: () => Promise<ViewerState>
+      renameBackground: (id: string, name: string) => Promise<ViewerState>
+      removeBackground: (id: string) => Promise<ViewerState>
+      selectBackground: (id: string) => Promise<ViewerState>
+      showFr3: () => Promise<ViewerState>
+      hideFr3: () => Promise<ViewerState>
+      resetFr3Transform: () => Promise<ViewerState>
+      setOutputOrder: (value: ViewerOutputOrder) => Promise<ViewerState>
       onStateChanged: (listener: (state: ViewerState) => void) => () => void
     }
   }

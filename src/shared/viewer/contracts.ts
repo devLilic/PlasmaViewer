@@ -26,6 +26,13 @@ export interface ViewerDisplay {
   height: number
 }
 
+export interface ViewerOutputOrder {
+  fr2: number
+  fr3: number
+}
+
+export const DEFAULT_VIEWER_OUTPUT_ORDER: ViewerOutputOrder = { fr2: 3, fr3: 1 }
+
 export interface ViewerWindowSettings {
   displayId: string | null
   fullscreen: boolean
@@ -44,6 +51,11 @@ export interface ViewerWindowBounds {
 export interface ViewerDefaultImage {
   name: string
   url: string
+}
+
+export interface ViewerBackground extends ViewerDefaultImage {
+  id: string
+  available: boolean
 }
 
 export type ViewerBoundsDimension = 'width' | 'height'
@@ -65,17 +77,28 @@ export interface ViewerTransformDefaults {
 export interface ViewerFr3Settings {
   enabled: boolean
   visible: boolean
-  transform: ViewerTransformDefaults
+  displayId: string | null
+  selectedBackgroundId: string | null
+  activeBackgroundId: string | null
+  transform: ViewerTransform
+}
+
+export interface ViewerFr3Update {
+  enabled?: boolean
+  displayId?: string | null
+  transform?: Partial<ViewerTransform>
 }
 
 export interface ViewerState {
   visible: boolean
   activeImage: ViewerImage | null
   defaultImage: ViewerDefaultImage | null
+  backgrounds: ViewerBackground[]
   transform: ViewerTransform
   transformDefaults: ViewerTransform
   window: ViewerWindowSettings
   fr3: ViewerFr3Settings
+  outputOrder: ViewerOutputOrder
   displays: ViewerDisplay[]
   lastCommandId: string | null
   error: string | null
@@ -91,8 +114,22 @@ export const defaultViewerTransform: ViewerTransform = {
   flipX: false,
 }
 
-export function shouldShowFr3(enabled: boolean, defaultImage: ViewerDefaultImage | null, fr2Fullscreen = false) {
-  return enabled && defaultImage !== null && !fr2Fullscreen
+export function shouldShowFr3(
+  enabled: boolean,
+  defaultImage: ViewerDefaultImage | null,
+  fr2Fullscreen = false,
+  sameDisplay = true,
+  fr2AboveFr3 = true,
+) {
+  return enabled && defaultImage !== null && !(fr2Fullscreen && sameDisplay && fr2AboveFr3)
+}
+
+export function normalizeOutputOrder(value: unknown): ViewerOutputOrder {
+  const order = value && typeof value === 'object' ? value as Partial<Record<keyof ViewerOutputOrder, unknown>> : {}
+  return {
+    fr2: normalizeOutputLevel(order.fr2, DEFAULT_VIEWER_OUTPUT_ORDER.fr2),
+    fr3: normalizeOutputLevel(order.fr3, DEFAULT_VIEWER_OUTPUT_ORDER.fr3),
+  }
 }
 
 export function resolveViewerDisplayId(displays: ViewerDisplay[], requestedDisplayId: string | null) {
@@ -132,7 +169,7 @@ export function normalizeViewerWindowBounds(
 
 export function getViewerKeyboardAdjustment(input: { key: string; ctrlKey: boolean; shiftKey: boolean }): ViewerKeyboardAdjustment | null {
   if (input.key === 'Escape') return { type: 'disable' }
-  const step = input.shiftKey ? 10 : 1
+  const step = input.shiftKey ? 50 : 10
   if (input.ctrlKey) {
     if (input.key === 'ArrowLeft') return { type: 'bounds', patch: { width: -step }, boundsChangedDimension: 'width' }
     if (input.key === 'ArrowRight') return { type: 'bounds', patch: { width: step }, boundsChangedDimension: 'width' }
@@ -194,6 +231,11 @@ export function maxViewerPanForZoom(zoom: number) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min))
+}
+
+function normalizeOutputLevel(value: unknown, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(100, Math.max(0, Math.round(value)))
 }
 
 export function isViewerCommand(value: unknown): value is ViewerCommand {
