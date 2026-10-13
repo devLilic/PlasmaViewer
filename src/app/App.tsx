@@ -175,7 +175,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
               {keyboardAdjustEnabled && <p className="hint">{t('viewer.fr2.keyboardHint', { defaultValue: 'Săgeți mută 10 px · Ctrl + săgeți redimensionează · Shift: 50 px · Escape: oprește' })}</p>}
             </div>
           </section>
-          <details className="panel transform-panel" open>
+          <details className="panel transform-panel">
             <summary className="adjustment-summary">Ajustări imagine plasma.test</summary>
             <Range label="Luminozitate" value={state.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateTransform({ brightness })} />
             <Range label="Contrast" value={state.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateTransform({ contrast })} />
@@ -212,7 +212,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
               {state.backgrounds.map(background => <BackgroundTile key={background.id} background={background} selected={background.id === state.fr3.selectedBackgroundId} applied={background.id === state.fr3.activeBackgroundId} onSelect={() => void runAction(window.viewerApi.selectBackground(background.id), setNotice)} onRemove={() => void runAction(window.viewerApi.removeBackground(background.id), setNotice)} removeDisabled={background.id === state.fr3.activeBackgroundId && state.fr3.enabled} />)}
             </div>
           </section>
-          <details className="panel transform-panel fr3-transform-panel" open>
+          <details className="panel transform-panel fr3-transform-panel">
             <summary className="adjustment-summary">{t('viewer.fr3.adjustments', { defaultValue: 'Ajustări imagine FR3' })}</summary>
             <Range label={t('viewer.brightness', { defaultValue: 'Luminozitate' })} value={state.fr3.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateFr3({ brightness })} />
             <Range label={t('viewer.contrast', { defaultValue: 'Contrast' })} value={state.fr3.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateFr3({ contrast })} />

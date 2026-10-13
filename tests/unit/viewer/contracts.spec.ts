@@ -29,6 +29,13 @@ describe('PlasmaViewer protocol', () => {
     })).toBe(true)
   })
 
+  it('accepts a request to show the configured PlasmaViewer default for an article', () => {
+    expect(isViewerCommand({
+      id: 'command-default-123', version: 1, timestamp: new Date().toISOString(), type: 'show-default',
+      payload: { articleId: 2, title: 'Material fără imagine', transform: normalizeTransform({}) },
+    })).toBe(true)
+  })
+
   it('rejects unsupported protocol versions', () => {
     expect(isViewerCommand({ id: 'command-123', version: 2, timestamp: new Date().toISOString(), type: 'hide' })).toBe(false)
   })

@@ -19,6 +19,8 @@ const electron = vi.hoisted(() => {
     bounds = { x: 0, y: 0, width: 1280, height: 720 }
     visible = false
     fullscreen = false
+    fullscreenEnterDelayMs = 0
+    fullscreenExitDelayMs = 0
     destroyed = false
     alwaysOnTop = false
     webContents = { send: vi.fn() }
@@ -29,8 +31,21 @@ const electron = vi.hoisted(() => {
     setMovable = vi.fn()
     setBounds = vi.fn((bounds: typeof this.bounds) => { this.bounds = { ...bounds } })
     setFullScreen = vi.fn((fullscreen: boolean) => {
-      this.fullscreen = fullscreen
-      if (!fullscreen) queueMicrotask(() => this.emit('leave-full-screen'))
+      if (fullscreen) {
+        const enter = () => {
+          this.fullscreen = true
+          this.emit('enter-full-screen')
+        }
+        if (this.fullscreenEnterDelayMs > 0) setTimeout(enter, this.fullscreenEnterDelayMs)
+        else queueMicrotask(enter)
+      } else {
+        const leave = () => {
+          this.fullscreen = false
+          this.emit('leave-full-screen')
+        }
+        if (this.fullscreenExitDelayMs > 0) setTimeout(leave, this.fullscreenExitDelayMs)
+        else queueMicrotask(leave)
+      }
     })
     showInactive = vi.fn(() => { this.visible = true })
     hide = vi.fn(() => { this.visible = false })
@@ -87,6 +102,7 @@ const electron = vi.hoisted(() => {
     showOpenDialog: vi.fn(async () => ({ canceled: true, filePaths: [] as string[] })),
     showMessageBox: vi.fn(async (..._args: any[]) => ({ response: 0 })),
     fetch: vi.fn(async () => ({ ok: true, status: 200, headers: { get: () => 'image/png' } })),
+    protocolHandle: vi.fn(),
   }
 })
 
@@ -101,7 +117,7 @@ vi.mock('electron', () => ({
     getPrimaryDisplay: () => electron.displays[0],
     getAllDisplays: () => electron.displays,
   },
-  protocol: { handle: vi.fn() },
+  protocol: { handle: electron.protocolHandle },
 }))
 
 vi.mock('../../../electron/main/bootstrap/paths', () => ({
@@ -166,6 +182,59 @@ describe('viewer controller dual preview behavior', () => {
       },
     })
   }
+
+  it('uses the local media protocol for Plasma images stored on this computer', async () => {
+    const command = {
+      id: `show-command-${++showSequence}-local`,
+      version: 1 as const,
+      timestamp: new Date().toISOString(),
+      type: 'show' as const,
+      payload: {
+        image: { imageId: 51, articleId: 52, title: 'Imagine locală', url: 'https://plasma.test/viewer/media/52/51?signature=valid', source: sourceImage },
+        transform: { brightness: 100, contrast: 100, saturation: 100, zoom: 1, panX: 0, panY: 0, flipX: false },
+      },
+    }
+
+    const state = await controller.execute(command)
+
+    expect(electron.fetch).not.toHaveBeenCalled()
+    expect(state.activeImage).toMatchObject({
+      articleId: 52,
+      imageId: 51,
+      source: sourceImage,
+      url: expect.stringMatching(/^plasma-viewer-background:\/\/source\/[a-zA-Z0-9-]+$/),
+    })
+    const protocolHandler = electron.protocolHandle.mock.calls[0][1]
+    const response = await protocolHandler({ url: state.activeImage!.url })
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('image/png')
+    expect(await response.text()).toBe('onair')
+  })
+
+  it('returns the configured default image asset for the plasma.test bridge', async () => {
+    const background = await addBackground()
+    await controller.selectBackground(background.id)
+    await controller.showFr3()
+
+    expect(controller.getDefaultImageAsset()).toEqual({ bytes: expect.any(Buffer), contentType: 'image/png' })
+    expect(controller.getDefaultImageAsset()?.bytes.toString()).toBe('background')
+  })
+
+  it('sends the configured default image to FR2 for an article without an image', async () => {
+    const background = await addBackground()
+    await controller.selectBackground(background.id)
+    await controller.showFr3()
+    const state = await controller.execute({
+      id: `show-default-command-${++showSequence}`,
+      version: 1,
+      timestamp: new Date().toISOString(),
+      type: 'show-default',
+      payload: { articleId: 72, title: 'Material fără imagine', transform: { brightness: 100, contrast: 100, saturation: 100, zoom: 1, panX: 0, panY: 0, flipX: false } },
+    })
+
+    expect(state.activeImage).toMatchObject({ articleId: 72, imageId: 0, title: 'Material fără imagine', source: controller.getDefaultImageSourcePath() })
+    expect(state.activeImage?.url).toMatch(/^plasma-viewer-background:\/\/source\//)
+  })
 
   it('keeps FR3 preview selection separate until showFr3 applies it live', async () => {
     const first = await addBackground()
@@ -234,6 +303,53 @@ describe('viewer controller dual preview behavior', () => {
     expect(electron.windows[1].getBounds()).toEqual(electron.displays[0].bounds)
     expect(electron.windows[2].getBounds()).toEqual(electron.displays[0].bounds)
     expect(electron.windows[2].isVisible()).toBe(true)
+  })
+
+  it('waits for Electron to finish a delayed fullscreen exit before reporting windowed mode', async () => {
+    const output = electron.windows[1]
+    output.fullscreenExitDelayMs = 1_250
+    vi.useFakeTimers()
+
+    try {
+      let completed = false
+      const switching = controller.updateWindow({ fullscreen: false }).then(() => { completed = true })
+
+      await vi.advanceTimersByTimeAsync(1_100)
+      expect(completed).toBe(false)
+      expect(output.isFullScreen()).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(200)
+      await switching
+
+      expect(output.isFullScreen()).toBe(false)
+      expect(controller.getState().window.fullscreen).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('waits for Electron to finish a delayed fullscreen entry before reporting fullscreen mode', async () => {
+    await controller.updateWindow({ fullscreen: false })
+    const output = electron.windows[1]
+    output.fullscreenEnterDelayMs = 1_250
+    vi.useFakeTimers()
+
+    try {
+      let completed = false
+      const switching = controller.updateWindow({ fullscreen: true }).then(() => { completed = true })
+
+      await vi.advanceTimersByTimeAsync(1_100)
+      expect(completed).toBe(false)
+      expect(output.isFullScreen()).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(200)
+      await switching
+
+      expect(output.isFullScreen()).toBe(true)
+      expect(controller.getState().window.fullscreen).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('uses the legacy FR3 display when the persisted FR2 display is unavailable', async () => {
@@ -332,8 +448,9 @@ describe('viewer controller dual preview behavior', () => {
     const removedDisplayHandler = electron.displayEvents.get('display-removed')!
     electron.displays.splice(0, 1)
 
-    removedDisplayHandler()
+    await removedDisplayHandler()
     await vi.waitFor(() => expect(controller.getState().window.displayId).toBe('2'))
+    await vi.waitFor(() => expect(electron.windows[2].getBounds().x).toBe(electron.displays[0].bounds.x))
 
     expect(controller.getState().fr3.displayId).toBe('2')
     expect(electron.windows[1].getBounds().x).toBe(electron.displays[0].bounds.x)

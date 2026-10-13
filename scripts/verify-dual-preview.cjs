@@ -236,11 +236,14 @@ module.exports.verify = async () => {
     check(persisted.backgrounds.length === 10 && persisted.fr3.activeBackgroundId !== persisted.fr3.selectedBackgroundId && persisted.fr3.transform.zoom === 1.5, 'gallery, separate selection and full FR3 adjustments persisted')
     const collapsed = await evaluate(`(() => {
       const panels = [...document.querySelectorAll('details.transform-panel, .transform-panel details')];
-      const initiallyOpen = panels.length === 2 && panels.every(panel => panel.open);
+      const initiallyCollapsed = panels.length === 2 && panels.every(panel => !panel.open);
       panels.forEach(panel => panel.querySelector('summary').click());
-      return { initiallyOpen, bothClosed: panels.length === 2 && panels.every(panel => !panel.open), controlsHidden: panels.every(panel => !panel.querySelector('.range').checkVisibility()) };
+      const bothExpanded = panels.length === 2 && panels.every(panel => panel.open);
+      const controlsVisible = panels.every(panel => panel.querySelector('.range').checkVisibility());
+      panels.forEach(panel => panel.querySelector('summary').click());
+      return { initiallyCollapsed, bothExpanded, controlsVisible, bothClosed: panels.length === 2 && panels.every(panel => !panel.open), controlsHidden: panels.every(panel => !panel.querySelector('.range').checkVisibility()) };
     })()`)
-    check(collapsed.initiallyOpen && collapsed.bothClosed && collapsed.controlsHidden, 'both adjustment panels start expanded and collapse independently, hiding slider controls')
+    check(collapsed.initiallyCollapsed && collapsed.bothExpanded && collapsed.controlsVisible && collapsed.bothClosed && collapsed.controlsHidden, 'both adjustment panels start collapsed and expand/collapse independently')
     const afterCollapse = await evaluate('window.viewerApi.getState()')
     check(JSON.stringify(afterCollapse.transform) === JSON.stringify(changed.transform) && JSON.stringify(afterCollapse.fr3.transform) === JSON.stringify(changed.fr3.transform), 'collapsing adjustment panels does not change either monitor transform')
     control.webContents.send('viewer:state-changed', afterCollapse)

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, nativeImage, net, screen, type OpenDialogOptions } from 'electron'
 import { randomUUID } from 'node:crypto'
+import { readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { createSecureBrowserWindow } from '../security/windowFactory'
 import { indexHtmlPath, VITE_DEV_SERVER_URL } from '../bootstrap/paths'
@@ -37,6 +38,8 @@ export class ViewerController {
   private outputWindow: BrowserWindow | null = null
   private fr3Window: BrowserWindow | null = null
   private readonly processedCommands = new Set<string>()
+  private readonly localMedia = new Map<string, string>()
+  private windowSettingsQueue: Promise<void> = Promise.resolve()
   private readonly store = createViewerStateStore(app.getPath('userData'))
   private readonly backgrounds: ReturnType<typeof createBackgroundLibrary>
   private state: ViewerState
@@ -75,7 +78,10 @@ export class ViewerController {
     }
     this.refreshActiveBackground()
     this.persist()
-    registerViewerBackgroundProtocol(id => this.backgrounds.resolvePath(id ?? this.state.fr3.activeBackgroundId ?? ''))
+    registerViewerBackgroundProtocol(
+      id => this.backgrounds.resolvePath(id ?? this.state.fr3.activeBackgroundId ?? ''),
+      id => this.localMedia.get(id) ?? null,
+    )
   }
 
   async createWindows() {
@@ -136,11 +142,50 @@ export class ViewerController {
     return structuredClone(this.state)
   }
 
+  getDefaultImageAsset(): { bytes: Buffer; contentType: string } | null {
+    const imagePath = this.getDefaultImageSourcePath()
+    if (!imagePath) return null
+    const contentTypeByExtension: Record<string, string> = {
+      '.bmp': 'image/bmp', '.gif': 'image/gif', '.jpeg': 'image/jpeg',
+      '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp',
+    }
+    const contentType = contentTypeByExtension[path.extname(imagePath).toLowerCase()]
+    if (!contentType) return null
+    try {
+      return { bytes: readFileSync(imagePath), contentType }
+    } catch {
+      return null
+    }
+  }
+
+  getDefaultImageSourcePath(): string | null {
+    const id = this.state.fr3.activeBackgroundId ?? ''
+    const imagePath = this.backgrounds.resolvePath(id)
+    return imagePath && this.backgrounds.available(id) ? imagePath : null
+  }
+
   async execute(command: ViewerCommand) {
     if (this.processedCommands.has(command.id)) return this.getState()
-    if (command.type === 'show') {
-      await this.validateImage(command.payload.image.url)
-      this.state.activeImage = command.payload.image
+    if (command.type === 'show' || command.type === 'show-default') {
+      const image = command.type === 'show'
+        ? { ...command.payload.image }
+        : {
+            imageId: 0,
+            articleId: command.payload.articleId,
+            title: command.payload.title,
+            url: 'plasma-viewer-background://current/image',
+            source: this.getDefaultImageSourcePath(),
+          }
+      if (command.type === 'show-default' && !image.source) throw new Error('Imaginea implicită PlasmaViewer nu este configurată sau disponibilă.')
+      if (image.source && this.isAvailableLocalImage(image.source)) {
+        const mediaId = randomUUID()
+        this.localMedia.set(mediaId, image.source)
+        while (this.localMedia.size > 5) this.localMedia.delete(this.localMedia.keys().next().value!)
+        image.url = `plasma-viewer-background://source/${mediaId}`
+      } else {
+        await this.validateImage(image.url)
+      }
+      this.state.activeImage = image
       this.state.transform = normalizeTransform(command.payload.transform)
       this.state.error = null
       await this.showOutput()
@@ -152,6 +197,7 @@ export class ViewerController {
       this.disconnectOutputs()
     } else if (command.type === 'window') {
       const { boundsChangedDimension: _boundsChangedDimension, ...windowUpdate } = command.payload
+      const previousWindow = { ...this.state.window, bounds: this.state.window.bounds ? { ...this.state.window.bounds } : null }
       this.state.window = {
         ...this.state.window,
         ...windowUpdate,
@@ -163,7 +209,12 @@ export class ViewerController {
         this.state.fr3.displayId = windowUpdate.displayId
       }
       const shouldReposition = windowUpdate.displayId !== undefined || windowUpdate.fullscreen !== undefined || windowUpdate.bounds !== undefined || windowUpdate.aspectMode !== undefined
-      await this.applyWindowSettings(this.state.window, shouldReposition, command.payload.boundsChangedDimension)
+      try {
+        await this.applyWindowSettings(this.state.window, shouldReposition, command.payload.boundsChangedDimension)
+      } catch (error) {
+        this.state.window = previousWindow
+        throw error
+      }
       this.applyFr3Settings()
     } else if (command.type === 'reset-transform') {
       this.state.transform = this.state.transformDefaults
@@ -441,6 +492,19 @@ export class ViewerController {
   }
 
   private async applyWindowSettings(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width') {
+    const requestedSettings = { ...settings, bounds: settings.bounds ? { ...settings.bounds } : null }
+    const previous = this.windowSettingsQueue
+    let release!: () => void
+    this.windowSettingsQueue = new Promise<void>((resolve) => { release = resolve })
+    await previous
+    try {
+      await this.applyWindowSettingsNow(requestedSettings, reposition, changedDimension)
+    } finally {
+      release()
+    }
+  }
+
+  private async applyWindowSettingsNow(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width') {
     if (!this.outputWindow) return
     this.refreshDisplays()
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
@@ -452,7 +516,7 @@ export class ViewerController {
           if (this.outputWindow.isFullScreen()) await leaveFullScreen(this.outputWindow)
           this.outputWindow.setMovable(false)
           this.outputWindow.setBounds(display.bounds)
-          this.outputWindow.setFullScreen(true)
+          await enterFullScreen(this.outputWindow)
         }
         return
       }
@@ -503,6 +567,15 @@ export class ViewerController {
     if (!response.ok) throw new Error(`Imaginea nu a putut fi încărcată (${response.status}).`)
     const contentType = response.headers.get('content-type') ?? ''
     if (!contentType.toLowerCase().startsWith('image/')) throw new Error('Resursa primită nu este o imagine validă.')
+  }
+
+  private isAvailableLocalImage(filePath: string) {
+    if (!path.isAbsolute(filePath) || !/\.(bmp|gif|jpe?g|png|webp)$/i.test(filePath)) return false
+    try {
+      return statSync(filePath).isFile() && !nativeImage.createFromPath(filePath).isEmpty()
+    } catch {
+      return false
+    }
   }
 
   private persist() {
@@ -598,19 +671,46 @@ function sameBounds(first: ViewerWindowBounds | null, second: Electron.Rectangle
   return first?.x === second.x && first.y === second.y && first.width === second.width && first.height === second.height
 }
 
-function leaveFullScreen(window: BrowserWindow) {
-  if (!window.isFullScreen()) return Promise.resolve()
+function waitForFullScreenState(window: BrowserWindow, fullscreen: boolean) {
+  if (window.isFullScreen() === fullscreen) return Promise.resolve()
 
-  return new Promise<void>((resolve) => {
-    const finish = () => {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false
+    const cleanup = () => {
+      settled = true
+      clearInterval(pollInterval)
       clearTimeout(timeout)
-      window.removeListener('leave-full-screen', finish)
+      if (fullscreen) window.removeListener('enter-full-screen', check)
+      else window.removeListener('leave-full-screen', check)
+    }
+    const finish = () => {
+      cleanup()
       resolve()
     }
-    const timeout = setTimeout(finish, 1_000)
-    window.once('leave-full-screen', finish)
-    window.setFullScreen(false)
+    const check = () => {
+      if (window.isFullScreen() === fullscreen) finish()
+    }
+    const pollInterval = setInterval(check, 50)
+    const timeout = setTimeout(() => {
+      check()
+      if (settled) return
+      cleanup()
+      // Do not report windowed mode as applied while Electron still reports fullscreen.
+      reject(new Error(`PlasmaViewer Output nu a confirmat ${fullscreen ? 'intrarea în' : 'ieșirea din'} fullscreen.`))
+    }, 5_000)
+    if (fullscreen) window.on('enter-full-screen', check)
+    else window.on('leave-full-screen', check)
+    window.setFullScreen(fullscreen)
+    check()
   })
+}
+
+function leaveFullScreen(window: BrowserWindow) {
+  return waitForFullScreenState(window, false)
+}
+
+function enterFullScreen(window: BrowserWindow) {
+  return waitForFullScreenState(window, true)
 }
 
 function nextWindowTick() {

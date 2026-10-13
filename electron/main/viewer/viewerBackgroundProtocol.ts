@@ -21,13 +21,14 @@ export function registerViewerBackgroundScheme() {
   }])
 }
 
-export function registerViewerBackgroundProtocol(resolveImagePath: (id: string | null) => string | null) {
+export function registerViewerBackgroundProtocol(resolveImagePath: (id: string | null) => string | null, resolveSourceImagePath: (id: string) => string | null = () => null) {
   protocol.handle(viewerBackgroundScheme, (request) => {
     const url = new URL(request.url)
+    const sourceId = url.hostname === 'source' && /^\/[a-zA-Z0-9-]{1,80}$/.test(url.pathname) ? url.pathname.slice(1) : undefined
     const id = url.hostname === 'current' && url.pathname === '/image' ? null
       : url.hostname === 'image' && /^\/[a-zA-Z0-9-]{1,80}$/.test(url.pathname) ? url.pathname.slice(1) : undefined
-    if (id === undefined) return new Response(null, { status: 404 })
-    const imagePath = resolveImagePath(id)
+    const imagePath = sourceId !== undefined ? resolveSourceImagePath(sourceId) : id !== undefined ? resolveImagePath(id) : undefined
+    if (imagePath === undefined) return new Response(null, { status: 404 })
     if (!imagePath) return new Response(null, { status: 404 })
 
     try {

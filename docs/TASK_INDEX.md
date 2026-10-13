@@ -6,7 +6,7 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 
 | Câmp | Valoare |
 |---|---|
-| Task activ | Niciunul; PV-008 finalizat pentru test. |
+| Task activ | Niciunul; PV-008 follow-up UI finalizat pentru test. |
 | Status | Completed — varianta Windows de test construită și documentată. |
 | Obiectiv | Dual-preview PlasmaVu, galerie persistentă, monitor comun și ordine configurabilă cu FR2 deasupra implicit. |
 | Verificări rămase | Checklistul manual multi-monitor și observarea flash-urilor pe hardware înainte de utilizare operațională. |
@@ -23,7 +23,7 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 | [PV-005](task-briefs/PV-005.md) | Completed | PV-004 | Reordonarea controalelor FR1 și blocarea dimensiunii FR2 la 16:9. |
 | [PV-006](task-briefs/PV-006.md) | Completed | PV-005 | Ajustarea poziției și dimensiunii FR2 din tastatură. |
 | [PV-007](task-briefs/PV-007.md) | Completed | PV-003, PV-004, PV-005, PV-006 | Verificare integrată, build și documentație finală. |
-| [PV-008](task-briefs/PV-008.md) | Completed | PV-007 | Dual-preview PlasmaVu, galerie verificată după restart, monitor comun în Settings și ordine FR2/FR3 persistentă. |
+| [PV-008](task-briefs/PV-008.md) | Completed | PV-007 | Dual-preview PlasmaVu, galerie verificată după restart, monitor comun în Settings, ordine FR2/FR3 persistentă și panouri de ajustări compacte la pornire. |
 
 ## Ordine obligatorie
 

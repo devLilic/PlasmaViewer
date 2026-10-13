@@ -39,6 +39,10 @@ Verificări actualizate: 58/58 teste Viewer/IPC în 8 fișiere, TypeScript, buil
 
 Manual multi-monitor **neexecutat**: schimbarea monitorului comun, hotplug, focus/z-order, observarea flash-urilor, operarea reală din plasma.test și închiderea pe Windows. Repornirea a fost verificată numai cu profilul temporar, fără modificarea datelor aplicației instalate. Verificările hardware rămân necesare înainte de utilizare operațională; testele offscreen și mock-urile nu le înlocuiesc. Pașii de test și rezultatele sunt în [PV-008](task-briefs/PV-008.md). Niciun task următor nu a fost activat.
 
+### PV-008 — follow-up UI — 2026-10-12 — Completed
+
+La solicitarea utilizatorului, panourile de ajustări FR2 și FR3 pornesc acum pliate în PlasmaViewer și rămân expandabile din antet. Verificatorul Electron a fost actualizat să confirme starea compactă inițială, deschiderea/închiderea ambelor panouri și păstrarea ajustărilor la pliere. Testele Viewer/IPC au trecut 73/73; `tsc --noEmit` și verificarea sintaxei verificatorului au trecut. Buildul aplicației nu a fost rulat; verificarea manuală în fereastra desktop rămâne pentru utilizator.
+
 ## Format pentru intrări noi
 
 Pentru fiecare task finalizat, înlocuiește sau adaugă un rând care include:

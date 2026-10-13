@@ -11,6 +11,12 @@ export function startViewerHttpServer(controller: ViewerController) {
       if (!isAuthorized(request, token)) return json(response, 401, { error: 'Neautorizat.' })
       if (request.method === 'GET' && request.url === '/v1/health') return json(response, 200, { status: 'ok', protocolVersion: 1 })
       if (request.method === 'GET' && request.url === '/v1/state') return json(response, 200, controller.getState())
+      if (request.method === 'GET' && request.url === '/v1/default-image') {
+        const image = controller.getDefaultImageAsset()
+        if (!image) return json(response, 404, { error: 'Imaginea implicită nu este disponibilă.' })
+        response.writeHead(200, { 'content-type': image.contentType, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
+        return response.end(image.bytes)
+      }
       if (request.method === 'POST' && request.url === '/v1/commands') {
         const body = await readJson(request)
         if (!isViewerCommand(body)) return json(response, 422, { error: 'Comandă PlasmaViewer invalidă.' })
