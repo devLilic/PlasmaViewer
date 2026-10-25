@@ -111,18 +111,29 @@ topmost, bounds and `free` or `16:9` aspect mode. With `16:9` selected, main
 normalizes windowed FR2 bounds after resizes and bounds changes, preserving the
 edited width (or deriving it from an edited height) and clamping to the display
 work area. Fullscreen does not overwrite the saved windowed bounds. FR3 always
-uses fullscreen geometry on the common selected display.
+uses fullscreen geometry on the common selected display and is kept at the
+Windows `screen-saver` topmost level, above the taskbar and ordinary windows.
+FR2 uses the same level when its saved topmost toggle is on. When both outputs
+are visible and FR2 is ordered above FR3, FR2 is temporarily promoted to that
+level so the configured output order remains intact; otherwise its toggle
+continues to control its topmost behavior. Both output renderers hide the
+cursor, and FR3 ignores mouse input natively.
 
 FR1 also provides a non-persistent keyboard adjustment mode for windowed FR2.
-With FR1 focused and the capture surface active, arrows move FR2 by 10 px,
-Ctrl+arrows resize it by 10 px, Shift changes the step to 50 px, and Escape exits
-the mode. It is not a system-wide shortcut; editable controls, fullscreen and
-lost focus disable or suppress it. Main validates all bounds changes.
+Activating the mode opens an instructional dialog; closing it or pressing
+Escape disables the mode. With FR1 focused, arrow keys move FR2 by 10 px, `+`
+and `-` resize it proportionally, and Shift changes the step to 50 px for both
+movement and resizing. The dialog itself closes the mode when dismissed. These
+are not system-wide shortcuts; editable controls, fullscreen and lost focus
+disable or suppress them. Main validates all bounds changes.
 
-The visible header and native application title are PlasmaVu. Package identity,
-executable name and userData location remain unchanged, preserving existing
-settings and managed gallery files. The gallery, selected/applied background,
-FR3 adjustments, common display and relative order are restored at startup.
+The renderer header contains no product logo or name. The native window title
+is `PlasmaVu (<version>)` and its title bar uses the PlasmaVu application icon.
+The installer product name and desktop shortcuts are PlasmaVu. The app ID and
+executable name remain unchanged, and the userData location stays under the
+existing PlasmaViewer directory. This preserves installed settings and managed
+gallery files across the rename. The gallery, selected/applied background, FR3
+adjustments, common display, and relative order are restored at startup.
 
 Closing PlasmaVu asks for confirmation when FR2 onAIR or FR3 is live. If
 confirmed, both output windows are disconnected before the application quits.

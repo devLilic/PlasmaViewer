@@ -27,6 +27,7 @@ const electron = vi.hoisted(() => {
     loadURL = vi.fn(async () => undefined)
     loadFile = vi.fn(async () => undefined)
     setIgnoreMouseEvents = vi.fn()
+    setTitle = vi.fn()
     setAlwaysOnTop = vi.fn((value: boolean) => { this.alwaysOnTop = value })
     setMovable = vi.fn()
     setBounds = vi.fn((bounds: typeof this.bounds) => { this.bounds = { ...bounds } })
@@ -107,7 +108,7 @@ const electron = vi.hoisted(() => {
 })
 
 vi.mock('electron', () => ({
-  app: { getPath: electron.getPath, quit: electron.quit },
+  app: { getPath: electron.getPath, getVersion: () => '1.0.2', quit: electron.quit },
   BrowserWindow: electron.MockBrowserWindow,
   dialog: { showOpenDialog: electron.showOpenDialog, showMessageBox: electron.showMessageBox },
   nativeImage: { createFromPath: () => ({ isEmpty: () => false }) },
@@ -457,8 +458,14 @@ describe('viewer controller dual preview behavior', () => {
     expect(electron.windows[2].getBounds().x).toBe(electron.displays[0].bounds.x)
   })
 
-  it('sets the control window title to PlasmaVu', () => {
-    expect(electron.windows[0].options.title).toBe('PlasmaVu')
+  it('sets the native control window title to PlasmaVu and the current version', () => {
+    expect(electron.windows[0].options.title).toBe('PlasmaVu (1.0.2)')
+
+    const preventDefault = vi.fn()
+    electron.windows[0].emit('page-title-updated', { preventDefault }, 'PlasmaVu')
+
+    expect(preventDefault).toHaveBeenCalledOnce()
+    expect(electron.windows[0].setTitle).toHaveBeenCalledWith('PlasmaVu (1.0.2)')
   })
 
   it('confirms quitting when FR3 is live even though FR2 has no onAIR image', async () => {

@@ -4,7 +4,7 @@ import { translateViewerMessage, viewerMessages } from '../../../src/shared/view
 describe('viewer messages', () => {
   it('returns Romanian messages by default and for a missing language', () => {
     expect(translateViewerMessage(undefined, 'invalidImage')).toBe('Fișierul selectat nu este o imagine validă.')
-    expect(translateViewerMessage(null, 'quitTitle')).toBe('Închide PlasmaViewer')
+    expect(translateViewerMessage(null, 'quitTitle')).toBe('Închide PlasmaVu')
   })
 
   it('looks up translations in English and Russian', () => {

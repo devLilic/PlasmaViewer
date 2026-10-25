@@ -66,6 +66,7 @@ export type ViewerWindowUpdate = Partial<ViewerWindowSettings> & {
 
 export type ViewerKeyboardAdjustment =
   | { type: 'disable' }
+  | { type: 'resize'; direction: -1 | 1; step: number }
   | { type: 'bounds'; patch: Partial<ViewerWindowBounds>; boundsChangedDimension?: ViewerBoundsDimension }
 
 export interface ViewerTransformDefaults {
@@ -170,13 +171,8 @@ export function normalizeViewerWindowBounds(
 export function getViewerKeyboardAdjustment(input: { key: string; ctrlKey: boolean; shiftKey: boolean }): ViewerKeyboardAdjustment | null {
   if (input.key === 'Escape') return { type: 'disable' }
   const step = input.shiftKey ? 50 : 10
-  if (input.ctrlKey) {
-    if (input.key === 'ArrowLeft') return { type: 'bounds', patch: { width: -step }, boundsChangedDimension: 'width' }
-    if (input.key === 'ArrowRight') return { type: 'bounds', patch: { width: step }, boundsChangedDimension: 'width' }
-    if (input.key === 'ArrowUp') return { type: 'bounds', patch: { height: -step }, boundsChangedDimension: 'height' }
-    if (input.key === 'ArrowDown') return { type: 'bounds', patch: { height: step }, boundsChangedDimension: 'height' }
-    return null
-  }
+  if (input.key === '+' || input.key === 'NumpadAdd') return { type: 'resize', direction: 1, step }
+  if (input.key === '-' || input.key === 'NumpadSubtract') return { type: 'resize', direction: -1, step }
   if (input.key === 'ArrowLeft') return { type: 'bounds', patch: { x: -step } }
   if (input.key === 'ArrowRight') return { type: 'bounds', patch: { x: step } }
   if (input.key === 'ArrowUp') return { type: 'bounds', patch: { y: -step } }

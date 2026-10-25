@@ -29,6 +29,11 @@ export function registerAutoUpdateModule(
   autoUpdater.disableWebInstaller = false
   autoUpdater.allowDowngrade = false
   autoUpdater.allowPrerelease = config.update.allowPrerelease
+  autoUpdater.setFeedURL({
+    provider: config.update.provider.provider,
+    owner: config.update.provider.owner,
+    repo: config.update.provider.repo,
+  })
 
   autoUpdater.on('update-available', (info: UpdateInfo) => {
     updateLogger.stateChanged('update-available', { version: info.version })
@@ -118,9 +123,6 @@ export function registerAutoUpdateModule(
     autoUpdater.quitAndInstall(false, true)
   })
 
-  if (config.update.autoCheck && app.isPackaged) {
-    void autoUpdater.checkForUpdates().catch(() => undefined)
-  }
 }
 
 function startDownload(

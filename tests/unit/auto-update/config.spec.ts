@@ -5,7 +5,11 @@ describe('auto update config', () => {
   it('defaults to detect and manual download for github releases', () => {
     const config = loadConfig('production', {})
 
+    expect(config.features.autoUpdate).toBe(true)
+    expect(config.update.enabled).toBe(true)
     expect(config.update.provider.provider).toBe('github')
+    expect(config.update.provider.owner).toBe('devLilic')
+    expect(config.update.provider.repo).toBe('PlasmaViewer')
     expect(config.update.provider.visibility).toBe('public')
     expect(config.update.autoCheck).toBe(true)
     expect(config.update.autoDownload).toBe(false)

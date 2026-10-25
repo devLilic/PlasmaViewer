@@ -1,6 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.devlilic.plasmaviewer",
+  "executableName": "PlasmaViewer",
   "asar": true,
   "directories": {
     "output": "release/${version}"
@@ -9,10 +10,17 @@
     "dist-electron",
     "dist"
   ],
+  "extraResources": [
+    {
+      "from": "build/icon.ico",
+      "to": "icon.ico"
+    }
+  ],
   "extraMetadata": {
     "main": "dist-electron/main/index.js"
   },
   "mac": {
+    "icon": "build/icon.icns",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "target": [
       "dmg",
@@ -20,6 +28,7 @@
     ]
   },
   "win": {
+    "icon": "build/icon.ico",
     "target": [
       {
         "target": "nsis",
@@ -31,6 +40,10 @@
     "artifactName": "${productName}-${version}-${arch}.${ext}"
   },
   "nsis": {
+    "shortcutName": "PlasmaVu",
+    "uninstallDisplayName": "PlasmaVu ${version}",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,

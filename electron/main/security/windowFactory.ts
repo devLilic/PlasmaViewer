@@ -1,6 +1,6 @@
-import { BrowserWindow, type BrowserWindowConstructorOptions } from 'electron'
-import path from 'node:path'
+import { app, BrowserWindow, type BrowserWindowConstructorOptions } from 'electron'
 import { preloadPath } from '../bootstrap/paths'
+import { resolveWindowIconPath } from '../bootstrap/windowIcon'
 
 export function createSecureBrowserWindow(
   options: BrowserWindowConstructorOptions = {},
@@ -12,7 +12,11 @@ function mergeWithSecureDefaults(
   options: BrowserWindowConstructorOptions,
 ): BrowserWindowConstructorOptions {
   return {
-    icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
+    icon: resolveWindowIconPath({
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
+      appRoot: process.env.APP_ROOT,
+    }),
     ...options,
     webPreferences: {
       contextIsolation: true,

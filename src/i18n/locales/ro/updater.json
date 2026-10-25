@@ -1,5 +1,14 @@
 {
-  "title": "Actualizator",
-  "available": "Este disponibila o actualizare.",
-  "download": "Descarca actualizarea"
+  "title": "Actualizări",
+  "description": "Verifică versiunile noi publicate pentru PlasmaVu.",
+  "available": "Este disponibilă o actualizare.",
+  "download": "Descarcă actualizarea",
+  "notAvailable": "Nu este disponibilă o versiune mai nouă.",
+  "check": "Verifică actualizările",
+  "checking": "Se verifică…",
+  "cancel": "Anulează",
+  "later": "Mai târziu",
+  "installNow": "Instalează acum",
+  "progress": "Progres descărcare:",
+  "error": "Actualizarea nu a putut fi verificată sau descărcată."
 }

@@ -3,7 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { isViewerCommand } from '../../../src/shared/viewer/contracts'
 import type { ViewerController } from './viewerController'
 
-export function startViewerHttpServer(controller: ViewerController) {
+export async function startViewerHttpServer(controller: ViewerController) {
   const port = parsePort(process.env.PLASMA_VIEWER_PORT)
   const token = process.env.PLASMA_VIEWER_TOKEN ?? 'plasma-viewer-local-development-token'
   const server = createServer(async (request, response) => {
@@ -19,7 +19,7 @@ export function startViewerHttpServer(controller: ViewerController) {
       }
       if (request.method === 'POST' && request.url === '/v1/commands') {
         const body = await readJson(request)
-        if (!isViewerCommand(body)) return json(response, 422, { error: 'Comandă PlasmaViewer invalidă.' })
+        if (!isViewerCommand(body)) return json(response, 422, { error: 'Comandă PlasmaVu invalidă.' })
         return json(response, 200, await controller.execute(body))
       }
       return json(response, 404, { error: 'Rută inexistentă.' })
@@ -27,7 +27,21 @@ export function startViewerHttpServer(controller: ViewerController) {
       return json(response, 422, { error: error instanceof Error ? error.message : 'Comanda nu a putut fi procesată.' })
     }
   })
-  server.listen(port, '127.0.0.1')
+  await new Promise<void>((resolve, reject) => {
+    const onError = (error: Error) => {
+      server.off('listening', onListening)
+      reject(error)
+    }
+    const onListening = () => {
+      server.off('error', onError)
+      resolve()
+    }
+
+    server.once('error', onError)
+    server.once('listening', onListening)
+    server.listen(port, '127.0.0.1')
+  })
+
   return server
 }
 

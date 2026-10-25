@@ -86,16 +86,21 @@ export class ViewerController {
 
   async createWindows() {
     this.refreshDisplays()
+    const controlTitle = `PlasmaVu (${app.getVersion()})`
     this.controlWindow = createSecureBrowserWindow({
-      title: 'PlasmaVu',
+      title: controlTitle,
       width: 1120,
       height: 780,
       minWidth: 860,
       minHeight: 640,
       backgroundColor: '#0b0d12',
     })
+    this.controlWindow.on('page-title-updated', (event) => {
+      event.preventDefault()
+      this.controlWindow?.setTitle(controlTitle)
+    })
     this.outputWindow = createSecureBrowserWindow({
-      title: 'PlasmaViewer Output',
+      title: 'PlasmaVu Output',
       show: false,
       frame: false,
       movable: true,
@@ -104,7 +109,7 @@ export class ViewerController {
       skipTaskbar: false,
     })
     this.fr3Window = createSecureBrowserWindow({
-      title: 'PlasmaViewer Background', show: false, frame: false, movable: false, resizable: false,
+      title: 'PlasmaVu Background', show: false, frame: false, movable: false, resizable: false,
       focusable: false, skipTaskbar: true, backgroundColor: '#000000',
     })
     this.fr3Window.setIgnoreMouseEvents(true)
@@ -176,7 +181,7 @@ export class ViewerController {
             url: 'plasma-viewer-background://current/image',
             source: this.getDefaultImageSourcePath(),
           }
-      if (command.type === 'show-default' && !image.source) throw new Error('Imaginea implicită PlasmaViewer nu este configurată sau disponibilă.')
+      if (command.type === 'show-default' && !image.source) throw new Error('Imaginea implicită PlasmaVu nu este configurată sau disponibilă.')
       if (image.source && this.isAvailableLocalImage(image.source)) {
         const mediaId = randomUUID()
         this.localMedia.set(mediaId, image.source)
@@ -457,6 +462,9 @@ export class ViewerController {
       }
 
       app.quit()
+    } catch (error) {
+      console.error('PlasmaVu could not complete the close confirmation.', error)
+      app.quit()
     } finally {
       this.closeConfirmationPending = false
     }
@@ -598,10 +606,9 @@ export class ViewerController {
       this.fr3Window.setBounds(display.bounds)
       this.fr3Window.setFullScreen(true)
     }
-    const fr3IsAlwaysOnTop = !this.isFr2AboveFr3() && this.state.window.topmost
-    if (this.fr3Window.isAlwaysOnTop() !== fr3IsAlwaysOnTop) {
-      this.fr3Window.setAlwaysOnTop(fr3IsAlwaysOnTop, fr3IsAlwaysOnTop ? 'screen-saver' : 'normal')
-    }
+    // FR3 is a broadcast output: keep its fullscreen surface above the Windows
+    // taskbar and ordinary application windows whenever it is shown.
+    if (!this.fr3Window.isAlwaysOnTop()) this.fr3Window.setAlwaysOnTop(true, 'screen-saver')
     const shouldShow = !this.fr3Suppressed && shouldShowFr3(
       this.state.fr3.enabled,
       this.state.defaultImage,
@@ -627,6 +634,13 @@ export class ViewerController {
     const fr2Visible = this.outputWindow.isVisible()
     const fr3Visible = this.fr3Window.isVisible()
     const fr2AboveFr3 = this.isFr2AboveFr3()
+    // FR2 may need the same native topmost level as FR3 to preserve the
+    // configured FR2-over-FR3 order. Outside that case, its user toggle wins.
+    const fr2IsAlwaysOnTop = this.state.window.topmost || (fr2Visible && fr3Visible && fr2AboveFr3)
+    if (this.outputWindow.isAlwaysOnTop() !== fr2IsAlwaysOnTop) {
+      this.outputWindow.setAlwaysOnTop(fr2IsAlwaysOnTop, fr2IsAlwaysOnTop ? 'screen-saver' : 'normal')
+    }
+    if (!this.fr3Window.isAlwaysOnTop()) this.fr3Window.setAlwaysOnTop(true, 'screen-saver')
     const signature = [
       this.state.window.displayId,
       this.state.window.fullscreen,
@@ -696,7 +710,7 @@ function waitForFullScreenState(window: BrowserWindow, fullscreen: boolean) {
       if (settled) return
       cleanup()
       // Do not report windowed mode as applied while Electron still reports fullscreen.
-      reject(new Error(`PlasmaViewer Output nu a confirmat ${fullscreen ? 'intrarea în' : 'ieșirea din'} fullscreen.`))
+      reject(new Error(`PlasmaVu Output nu a confirmat ${fullscreen ? 'intrarea în' : 'ieșirea din'} fullscreen.`))
     }, 5_000)
     if (fullscreen) window.on('enter-full-screen', check)
     else window.on('leave-full-screen', check)

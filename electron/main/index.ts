@@ -1,6 +1,7 @@
-import { app, ipcMain, type BrowserWindow } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import type { Server } from 'node:http'
 import { loadConfig } from '../../config/loadConfig'
+import { setPackagedEnvironment } from '../../config/runtimeEnvironment'
 import { registerAppLifecycle, registerSingleInstance } from './bootstrap/appLifecycle'
 import './bootstrap/paths'
 import { registerMainModuleRegistry } from './bootstrap/registerMainModuleRegistry'
@@ -11,6 +12,7 @@ import { markViewerQuitting, ViewerController } from './viewer/viewerController'
 import { startViewerHttpServer } from './viewer/viewerHttpServer'
 import { registerViewerBackgroundScheme } from './viewer/viewerBackgroundProtocol'
 
+setPackagedEnvironment(app.isPackaged, process.env)
 const config = loadConfig()
 
 registerViewerBackgroundScheme()
@@ -23,6 +25,8 @@ let viewerController: ViewerController | null = null
 let viewerServer: Server | null = null
 
 async function bootstrap() {
+  await registerMainModuleRegistry(config, () => mainWindow)
+
   if (viewerController) {
     mainWindow = viewerController.getControlWindow()
     mainWindow?.show()
@@ -33,23 +37,45 @@ async function bootstrap() {
   viewerController = new ViewerController()
   registerViewerIpc(viewerController)
   mainWindow = await viewerController.createWindows()
-  viewerServer = startViewerHttpServer(viewerController)
+  viewerServer = await startViewerHttpServer(viewerController)
 
   mainWindow.on('closed', () => {
     mainWindow = null
   })
 }
 
-void registerMainModuleRegistry(config, () => mainWindow)
 registerAppLifecycle(() => mainWindow, bootstrap)
 
-app.whenReady().then(bootstrap)
+void app.whenReady().then(bootstrap).catch(handleStartupFailure)
 
 app.on('before-quit', () => {
   markViewerQuitting()
-  viewerServer?.close()
-  viewerServer = null
+  closeViewerServer()
 })
+
+function handleStartupFailure(error: unknown) {
+  console.error('PlasmaVu failed to start.', error)
+  markViewerQuitting()
+  closeViewerServer()
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) window.destroy()
+  }
+
+  try {
+    dialog.showErrorBox(app.getName(), error instanceof Error ? error.message : String(error))
+  } finally {
+    app.exit(1)
+  }
+}
+
+function closeViewerServer() {
+  if (!viewerServer) return
+
+  const server = viewerServer
+  viewerServer = null
+  server.close()
+  server.closeAllConnections()
+}
 
 function registerViewerIpc(controller: ViewerController) {
   ipcMain.handle(ipcInvokeChannels.viewerGetState, () => controller.getState())

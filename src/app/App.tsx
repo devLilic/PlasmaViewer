@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getViewerKeyboardAdjustment, maxViewerPanForZoom, type ViewerState, type ViewerTransform, type ViewerTransformDefaults } from '@/shared/viewer/contracts'
+import { isAutoUpdateEnabled } from '@/shared/auto-update/activation'
+import UpdateFeature from '@/features/update'
 import { useTranslation } from 'react-i18next'
 import './App.css'
 
@@ -34,10 +36,6 @@ function App() {
 
 function Navigation({ page, onChange }: { page: 'control' | 'settings'; onChange: (page: 'control' | 'settings') => void }) {
   return <nav className="viewer-navigation" aria-label="Navigare Viewer"><button className={page === 'control' ? 'active' : ''} onClick={() => onChange('control')}>Control</button><button className={page === 'settings' ? 'active' : ''} onClick={() => onChange('settings')}>Settings</button></nav>
-}
-
-function Brand() {
-  return <div className="brand"><img src={`${import.meta.env.BASE_URL}plasma-viewer-logo.png`} alt="" /><span>PlasmaVu</span></div>
 }
 
 function Output({ state }: { state: ViewerState }) {
@@ -101,7 +99,13 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
   const outputsLive = state.visible || state.fr3.visible
   const selectedBackground = state.backgrounds.find(background => background.id === state.fr3.selectedBackgroundId) ?? null
   const [keyboardAdjustEnabled, setKeyboardAdjustEnabled] = useState(false)
-  const keyboardCaptureRef = useRef<HTMLDivElement>(null)
+  const keyboardModeButtonRef = useRef<HTMLButtonElement>(null)
+  const keyboardDialogCloseRef = useRef<HTMLButtonElement>(null)
+
+  const closeKeyboardAdjust = useCallback(() => {
+    setKeyboardAdjustEnabled(false)
+    requestAnimationFrame(() => keyboardModeButtonRef.current?.focus())
+  }, [])
 
   useEffect(() => {
     if (hidden || state.window.fullscreen) setKeyboardAdjustEnabled(false)
@@ -109,14 +113,22 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
 
   useEffect(() => {
     if (!keyboardAdjustEnabled || hidden || state.window.fullscreen) return
+    keyboardDialogCloseRef.current?.focus()
     const onBlur = () => setKeyboardAdjustEnabled(false)
     const onKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return
       const adjustment = getViewerKeyboardAdjustment(event)
       if (!adjustment) return
       event.preventDefault()
-      if (adjustment.type === 'disable') return setKeyboardAdjustEnabled(false)
+      if (adjustment.type === 'disable') return closeKeyboardAdjust()
       const current = state.window.bounds ?? { x: 0, y: 0, width: 1280, height: 720 }
+      if (adjustment.type === 'resize') {
+        const width = Math.max(320, current.width + adjustment.direction * adjustment.step)
+        const scale = width / current.width
+        const bounds = { ...current, width, height: Math.max(180, Math.round(current.height * scale)) }
+        void runAction(window.viewerApi.setWindow({ bounds, boundsChangedDimension: 'width' }), setNotice)
+        return
+      }
       const bounds = addBoundsPatch(current, adjustment.patch)
       void runAction(window.viewerApi.setWindow({ bounds, boundsChangedDimension: adjustment.boundsChangedDimension }), setNotice)
     }
@@ -126,17 +138,15 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
       window.removeEventListener('blur', onBlur)
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [keyboardAdjustEnabled, hidden, state.window.bounds, state.window.fullscreen])
+  }, [keyboardAdjustEnabled, hidden, state.window.bounds, state.window.fullscreen, closeKeyboardAdjust])
 
   const toggleKeyboardAdjust = (enabled: boolean) => {
     setKeyboardAdjustEnabled(enabled)
-    if (enabled) requestAnimationFrame(() => keyboardCaptureRef.current?.focus())
   }
 
   return (
     <main className="control-shell" hidden={hidden}>
       <header className="topbar">
-        <Brand />
         <Navigation page={page} onChange={onNavigate} />
         <div className="header-actions">
           <button className={`onair-control ${outputsLive ? 'live' : ''}`} disabled={!outputsLive} onClick={() => void runAction(window.viewerApi.disconnectOutputs(), setNotice)} aria-label="Deconectează ferestrele FR2 și FR3"><i /><span>{outputsLive ? 'ON AIR' : 'OFF AIR'}</span>{outputsLive && <b>DECONECTEAZĂ</b>}</button>
@@ -170,9 +180,8 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
               <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width }, setNotice)} />
               <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height }, setNotice)} />
             </div>
-            <div className="keyboard-adjustment" ref={keyboardCaptureRef} tabIndex={-1} aria-label="Captură taste pentru ajustarea FR2">
-              <button type="button" className={`keyboard-mode ${keyboardAdjustEnabled ? 'active' : ''}`} disabled={state.window.fullscreen} onClick={() => toggleKeyboardAdjust(!keyboardAdjustEnabled)}><span>Ajustare din taste</span><b>{keyboardAdjustEnabled ? 'ON' : 'OFF'}</b></button>
-              {keyboardAdjustEnabled && <p className="hint">{t('viewer.fr2.keyboardHint', { defaultValue: 'Săgeți mută 10 px · Ctrl + săgeți redimensionează · Shift: 50 px · Escape: oprește' })}</p>}
+            <div className="keyboard-adjustment" aria-label={t('viewer.fr2.keyboardTitle', { defaultValue: 'Ajustare FR2 din taste' })}>
+              <button ref={keyboardModeButtonRef} type="button" className={`keyboard-mode ${keyboardAdjustEnabled ? 'active' : ''}`} disabled={state.window.fullscreen} onClick={() => toggleKeyboardAdjust(!keyboardAdjustEnabled)}><span>{t('viewer.fr2.keyboardTitle', { defaultValue: 'Ajustare FR2 din taste' })}</span><b>{keyboardAdjustEnabled ? 'ON' : 'OFF'}</b></button>
             </div>
           </section>
           <details className="panel transform-panel">
@@ -226,8 +235,51 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
         </article>
       </section>
       {(notice || state.error) && <div className="error" role="status">{notice ?? state.error}</div>}
+      {keyboardAdjustEnabled && !hidden && !state.window.fullscreen && <KeyboardAdjustmentDialog closeButtonRef={keyboardDialogCloseRef} onClose={closeKeyboardAdjust} />}
     </main>
   )
+}
+
+function KeyboardAdjustmentDialog({ closeButtonRef, onClose }: { closeButtonRef: { current: HTMLButtonElement | null }; onClose: () => void }) {
+  const { t } = useTranslation()
+  const text = (key: string, fallback: string) => t(`viewer.fr2.keyboardDialog.${key}`, { defaultValue: fallback })
+
+  return (
+    <div className="keyboard-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+      <section className="keyboard-dialog" role="dialog" aria-modal="true" aria-labelledby="keyboard-dialog-title" aria-describedby="keyboard-dialog-subtitle">
+        <header className="keyboard-dialog-header">
+          <div className="keyboard-dialog-heading">
+            <span className="keyboard-dialog-mark" aria-hidden="true">⌖</span>
+            <div><h2 id="keyboard-dialog-title">{text('title', 'Ajustare FR2 din taste')}</h2><p id="keyboard-dialog-subtitle">{text('subtitle', 'Mod fereastră · Închide această fereastră pentru a opri modul')}</p></div>
+          </div>
+          <button ref={closeButtonRef} type="button" className="keyboard-dialog-close" onClick={onClose} aria-label={text('close', 'Închide și oprește ajustarea')}>×</button>
+        </header>
+        <div className="keyboard-dialog-cards">
+          <article className="keyboard-instruction-card">
+            <h3>{text('moveTitle', 'Mută fereastra')}</h3>
+            <ArrowKeyCluster />
+            <p className="keyboard-instruction-caption">{text('moveStep', 'Mută cu 10 px')}</p>
+          </article>
+          <article className="keyboard-instruction-card keyboard-resize-card">
+            <h3>{text('resizeTitle', 'Redimensionează')}</h3>
+            <div className="keyboard-resize-row"><kbd>+</kbd><span>{text('enlarge', 'Mărește fereastra')}</span></div>
+            <div className="keyboard-resize-row"><kbd>−</kbd><span>{text('shrink', 'Micșorează fereastra')}</span></div>
+          </article>
+        </div>
+        <div className="keyboard-shift-note"><kbd>Shift</kbd><span>{text('shiftStep', 'Ține apăsat Shift pentru pas de 50 px la toate comenzile')}</span></div>
+        <footer className="keyboard-dialog-footer">
+          <div className="keyboard-close-hint"><kbd>Esc</kbd><span>{text('escape', 'Esc oprește ajustarea; butonul de închidere face același lucru.')}</span></div>
+          <span className="keyboard-active-status"><i aria-hidden="true" />{text('active', 'ACTIV')}</span>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function ArrowKeyCluster() {
+  return <div className="keyboard-arrow-cluster" aria-hidden="true">
+    <kbd className="arrow-up">↑</kbd><kbd className="arrow-left">←</kbd><kbd className="arrow-down">↓</kbd><kbd className="arrow-right">→</kbd>
+  </div>
 }
 
 function BackgroundTile({ background, selected, applied, onSelect, onRemove, removeDisabled }: { background: ViewerState['backgrounds'][number]; selected: boolean; applied: boolean; onSelect: () => void; onRemove: () => void; removeDisabled: boolean }) {
@@ -346,7 +398,7 @@ function Settings({ state, hidden, page, onNavigate }: { state: ViewerState; hid
   }
 
   return <main className="control-shell" hidden={hidden}>
-    <header className="topbar"><Brand /><Navigation page={page} onChange={onNavigate} /><span className="settings-label">Settings</span></header>
+    <header className="topbar"><Navigation page={page} onChange={onNavigate} /><span className="settings-label">Settings</span></header>
     <section className="settings-layout">
       <section className="panel shared-display-settings" aria-labelledby="shared-output-settings-heading">
         <h2 id="shared-output-settings-heading">{t('viewer.shared.settingsTitle', { defaultValue: 'Monitor și ordinea ferestrelor' })}</h2>
@@ -370,6 +422,11 @@ function Settings({ state, hidden, page, onNavigate }: { state: ViewerState; hid
         <button className="primary save-defaults" disabled={!valid || !changed || saving} onClick={() => void save()}>{saving ? 'Se salvează…' : 'Salvează'}</button>
         {notice && <p className="settings-notice">{notice}</p>}
       </section>
+      {isAutoUpdateEnabled(window.appApi.getConfig()) && <section className="panel update-settings">
+        <h2>{t('updater:title', { defaultValue: 'Actualizări' })}</h2>
+        <p className="hint">{t('updater:description', { defaultValue: 'Verifică versiunile noi publicate pentru PlasmaVu.' })}</p>
+        <UpdateFeature />
+      </section>}
     </section>
   </main>
 }

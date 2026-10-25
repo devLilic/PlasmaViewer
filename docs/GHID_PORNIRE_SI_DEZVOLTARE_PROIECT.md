@@ -453,9 +453,12 @@ Trebuie verificat:
 - `update.provider.visibility`
 
 Flow-ul implementat este:
-- detect update
-- notify user
-- manual download
+- buildul instalat selectează config-ul `production` și verifică automat la pornire;
+- pagina Settings poate porni o verificare manuală;
+- update-ul disponibil este descărcat la cerere și instalat după confirmare;
+- buildul local de development nu activează updaterul.
+
+Electron Builder citește providerul GitHub din `electron-builder.json`. La pornire, main configurează și providerul runtime din `config.update.provider`, astfel că verificarea folosește repository-ul declarat chiar și în pachetul unpacked. La publicarea unui release, construiește aplicația cu o versiune nouă în `package.json` și atașează artefactele de update produse de Electron Builder la release-ul GitHub. Actualizările instalate verifică release-ul `latest` al repository-ului configurat.
 
 ### App Protection
 

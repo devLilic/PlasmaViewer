@@ -40,20 +40,32 @@ export function useUpdateState(): UpdateState {
     progressInfo: state.progressInfo,
     async checkForUpdates() {
       setChecking(true)
-      const result = await window.updateApi.checkForUpdates()
-      setState((currentState) => ({
-        ...currentState,
-        modalOpen: true,
-        progressInfo: { percent: 0 },
-      }))
-      setChecking(false)
-
-      if ((result as { error?: Error }).error) {
+      try {
+        const result = await window.updateApi.checkForUpdates() as { message?: string; error?: unknown } | null
         setState((currentState) => ({
           ...currentState,
-          updateAvailable: false,
-          updateError: result as UpdateErrorPayload,
+          modalOpen: true,
+          progressInfo: { percent: 0 },
         }))
+
+        if (result?.error) {
+          const error = result.error instanceof Error ? result.error : new Error(result.message ?? 'Eroare la verificarea actualizărilor.')
+          setState((currentState) => ({
+            ...currentState,
+            updateAvailable: false,
+            updateError: { message: result.message ?? error.message, error },
+          }))
+        }
+      } catch (value) {
+        const error = value instanceof Error ? value : new Error('Eroare la verificarea actualizărilor.')
+        setState((currentState) => ({
+          ...currentState,
+          modalOpen: true,
+          updateAvailable: false,
+          updateError: { message: error.message, error },
+        }))
+      } finally {
+        setChecking(false)
       }
     },
     closeModal() {

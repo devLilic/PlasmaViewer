@@ -1,5 +1,14 @@
 {
-  "title": "Updater",
+  "title": "Updates",
+  "description": "Check for new versions released for PlasmaVu.",
   "available": "An update is available.",
-  "download": "Download update"
+  "download": "Download update",
+  "notAvailable": "You are using the latest version.",
+  "check": "Check for updates",
+  "checking": "Checking…",
+  "cancel": "Cancel",
+  "later": "Later",
+  "installNow": "Install now",
+  "progress": "Download progress:",
+  "error": "The update could not be checked or downloaded."
 }
