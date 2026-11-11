@@ -352,3 +352,50 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     grid-template-areas: "mode" "geometry" "window";
   }
 }
+
+/* Keep scrolling within the inspector and limit the gallery to two rows. */
+.control-workspace:not([hidden]) { display: flex; flex-direction: column; overflow: hidden; }
+.control-workspace .topbar, .control-workspace .workspace { flex: 0 0 auto; }
+.control-workspace .inspector { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.control-workspace .inspector-tabs { flex: 0 0 auto; }
+.control-workspace .inspector-content { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.gallery-pane:not([hidden]) { display: flex; height: 100%; min-height: 0; }
+.inspector-content .gallery-card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 0;
+  container-type: inline-size;
+}
+.gallery-heading { flex: 0 0 auto; }
+.background-gallery {
+  display: grid;
+  flex: 0 1 auto;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-auto-rows: min-content;
+  align-content: start;
+  min-height: 0;
+  max-height: min(100%, calc((100cqw - 70px) * 0.140625 + 12px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+}
+.inspector-content .background-tile { width: 100%; min-width: 0; }
+.background-gallery .gallery-empty { grid-column: 1 / -1; }
+.background-gallery::-webkit-scrollbar { width: 9px; height: 9px; }
+.background-gallery::-webkit-scrollbar-thumb { min-height: 34px; background: linear-gradient(180deg, #3479c8, #4c9aff) padding-box; }
+.background-gallery::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #4591e5, #69adff) padding-box; }
+@media (max-width: 1199px) {
+  .background-gallery { grid-template-columns: repeat(6, minmax(0, 1fr)); max-height: min(100%, calc((100cqw - 50px) * 0.1875 + 12px)); }
+}
+@media (max-width: 899px) {
+  .background-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: min(100%, calc((100cqw - 30px) * 0.28125 + 12px)); }
+}
+@media (max-width: 599px) {
+  .background-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: min(100%, calc((100cqw - 10px) * 0.5625 + 12px)); }
+}
+@media (max-width: 700px) {
+  .control-workspace .preview { width: min(100%, 27vh, 350px); }
+}

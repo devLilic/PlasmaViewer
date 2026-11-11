@@ -407,7 +407,7 @@ export class ViewerController {
   async showOutput() {
     if (!this.outputWindow || !this.state.activeImage) return this.getState()
     this.fr3Suppressed = false
-    await this.applyWindowSettings(this.state.window, false)
+    await this.applyWindowSettings(this.state.window, false, 'width', true)
     this.state.visible = true
     this.applyFr3Settings()
     if (!this.outputWindow.isVisible()) {
@@ -497,23 +497,27 @@ export class ViewerController {
     this.state.fr3.displayId = commonDisplayId
   }
 
-  private async applyWindowSettings(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width') {
+  private async applyWindowSettings(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width', activate = false) {
     const requestedSettings = { ...settings, bounds: settings.bounds ? { ...settings.bounds } : null }
     const previous = this.windowSettingsQueue
     let release!: () => void
     this.windowSettingsQueue = new Promise<void>((resolve) => { release = resolve })
     await previous
     try {
-      await this.applyWindowSettingsNow(requestedSettings, reposition, changedDimension)
+      await this.applyWindowSettingsNow(requestedSettings, reposition, changedDimension, activate)
     } finally {
       release()
     }
   }
 
-  private async applyWindowSettingsNow(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width') {
+  private async applyWindowSettingsNow(settings: ViewerWindowSettings, reposition = false, changedDimension: 'width' | 'height' = 'width', activate = false) {
     if (!this.outputWindow) return
     this.refreshDisplays()
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
+    if (!this.state.visible && !activate) {
+      if (!settings.fullscreen) this.state.window.bounds = normalizeViewerWindowBounds(settings.bounds, display.bounds, settings.aspectMode, changedDimension)
+      return
+    }
     this.applyingWindowSettings = true
     try {
       if (this.outputWindow.isAlwaysOnTop() !== settings.topmost) this.outputWindow.setAlwaysOnTop(settings.topmost, settings.topmost ? 'screen-saver' : 'normal')

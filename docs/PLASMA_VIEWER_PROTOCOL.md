@@ -17,6 +17,9 @@ Preview surfaces retain a 16:9 aspect ratio. Aspect controls use a compact,
 responsive grid so both previews can remain visible while adjusting them.
 Plasme window settings place geometry and window options side by side when
 space permits, with a stacked layout on narrow screens.
+When Plasme is hidden, changing its display mode or geometry saves the setting
+without showing the native output window. The saved settings are applied when
+the output is explicitly shown. Changes to a visible output apply immediately.
 
 PlasmaViewer listens on `127.0.0.1:47832` by default. Every request requires
 `Authorization: Bearer <PLASMA_VIEWER_TOKEN>`. The server accepts requests only
@@ -86,8 +89,9 @@ Hiding FR3 stops its player. An unplayable clip shows an error in the preview.
 Managed video URLs stream byte ranges for playback and seeking.
 MP4 gallery tiles show a paused frame from the clip and an MP4 badge. If the
 clip cannot be decoded, the badge remains visible on the thumbnail.
-The gallery is a single row with local horizontal scrolling when
-needed; long names are truncated visually without changing the saved name.
+The gallery uses up to two visible rows, with eight items per row on desktop
+and fewer columns on narrower windows. Additional items scroll vertically
+inside the gallery. The Control page keeps scrolling inside the inspector.
 Names initially come from imported filenames; rename controls are no longer
 shown in the gallery (the typed rename API is retained for compatibility).
 Removal uses a small red X above the thumbnail's top-right corner and requests

@@ -197,6 +197,28 @@ describe('viewer controller dual preview behavior', () => {
     expect(restarted.getState().fr3.visible).toBe(true)
   })
 
+  it('saves Plasme display modes while hidden and applies them only when output is shown', async () => {
+    const output = electron.windows[1]
+    output.setFullScreen.mockClear()
+    output.setBounds.mockClear()
+    await controller.updateWindow({ fullscreen: false })
+    await controller.updateWindow({ fullscreen: true })
+    expect(output.setFullScreen).not.toHaveBeenCalled()
+    expect(output.setBounds).not.toHaveBeenCalled()
+    expect(controller.getState()).toMatchObject({ visible: false, window: { fullscreen: true } })
+    await showOnAir()
+    expect(output.isVisible()).toBe(true)
+    expect(output.isFullScreen()).toBe(true)
+    await controller.updateWindow({ fullscreen: false })
+    expect(output.isVisible()).toBe(true)
+    expect(output.isFullScreen()).toBe(false)
+    controller.hide()
+    output.setFullScreen.mockClear()
+    await controller.updateWindow({ fullscreen: true })
+    expect(output.isVisible()).toBe(false)
+    expect(output.setFullScreen).not.toHaveBeenCalled()
+  })
+
   it('uses the local media protocol for Plasma images stored on this computer', async () => {
     const command = {
       id: `show-command-${++showSequence}-local`,
@@ -361,12 +383,13 @@ describe('viewer controller dual preview behavior', () => {
 
     expect(state.window).toMatchObject({ displayId: '1', fullscreen: true })
     expect(state.fr3).toMatchObject({ displayId: '1', activeBackgroundId: entry.id, visible: true })
-    expect(electron.windows[1].getBounds()).toEqual(electron.displays[0].bounds)
+    expect(electron.windows[1].isVisible()).toBe(false)
     expect(electron.windows[2].getBounds()).toEqual(electron.displays[0].bounds)
     expect(electron.windows[2].isVisible()).toBe(true)
   })
 
   it('waits for Electron to finish a delayed fullscreen exit before reporting windowed mode', async () => {
+    await showOnAir()
     const output = electron.windows[1]
     output.fullscreenExitDelayMs = 1_250
     vi.useFakeTimers()
@@ -390,6 +413,7 @@ describe('viewer controller dual preview behavior', () => {
   })
 
   it('waits for Electron to finish a delayed fullscreen entry before reporting fullscreen mode', async () => {
+    await showOnAir()
     await controller.updateWindow({ fullscreen: false })
     const output = electron.windows[1]
     output.fullscreenEnterDelayMs = 1_250
@@ -514,6 +538,8 @@ describe('viewer controller dual preview behavior', () => {
     await vi.waitFor(() => expect(electron.windows[2].getBounds().x).toBe(electron.displays[0].bounds.x))
 
     expect(controller.getState().fr3.displayId).toBe('2')
+    expect(electron.windows[1].isVisible()).toBe(false)
+    await showOnAir()
     expect(electron.windows[1].getBounds().x).toBe(electron.displays[0].bounds.x)
     expect(electron.windows[2].getBounds().x).toBe(electron.displays[0].bounds.x)
   })

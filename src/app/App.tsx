@@ -161,7 +161,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
   }
 
   return (
-    <main className="control-shell" hidden={hidden}>
+    <main className="control-shell control-workspace" hidden={hidden}>
       <header className="topbar">
         <Navigation page={page} onChange={onNavigate} />
         <div className="header-actions">
@@ -203,7 +203,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
           {(['source', 'aspect', 'settings'] as const).map(tab => <button key={tab} type="button" role="tab" aria-selected={inspectorTab === tab} className={inspectorTab === tab ? 'active' : ''} onClick={() => setInspectorTab(tab)}>{t(`viewer.inspector.${tab}`, { defaultValue: tab === 'source' ? 'Sursă' : tab === 'aspect' ? 'Aspect' : 'Setări' })}</button>)}
         </div>
         <div className="inspector-content">
-          <div hidden={inspectorTab !== 'source' || target !== 'background'}>
+          <div className="gallery-pane" hidden={inspectorTab !== 'source' || target !== 'background'}>
           <section className="gallery-card" aria-label={t('viewer.fr3.gallery', { defaultValue: 'Galerie locală Background' })}>
             <div className="gallery-heading"><div><h2>{t('viewer.fr3.gallery', { defaultValue: 'Galerie locală Background' })}</h2><p>{t('viewer.fr3.galleryHint', { defaultValue: 'Selectarea schimbă doar previzualizarea.' })}</p></div><button className="primary import-button" onClick={() => void runAction(window.viewerApi.importBackgrounds(), setNotice)}><UiIcon name="plus" /> {t('viewer.fr3.addFiles', { defaultValue: 'Adaugă fișiere' })}</button></div>
             <div className="background-gallery">
