@@ -44,7 +44,7 @@
   "viewer.fr3.gallery": "Galerie locală FR3",
   "viewer.fr3.galleryHint": "Selectarea schimbă doar previzualizarea.",
   "viewer.fr3.addFiles": "Adaugă fișiere",
-  "viewer.fr3.emptyGallery": "Galeria este goală. Adaugă imagini pentru FR3.",
+  "viewer.fr3.emptyGallery": "Adaugă imagini sau clipuri MP4 pentru FR3.",
   "viewer.fr3.unavailable": "Lipsă",
   "viewer.fr3.selectBackground": "Selectează {{name}} pentru previzualizare",
   "viewer.fr3.selected": "Selectat",
@@ -52,9 +52,10 @@
   "viewer.fr3.editName": "Editează numele fundalului",
   "viewer.fr3.rename": "Redenumește",
   "viewer.fr3.remove": "Elimină",
-  "viewer.fr3.liveCannotRemove": "Ascunde FR3 înainte de a elimina imaginea activă.",
-  "viewer.fr3.adjustments": "Ajustări imagine FR3",
+  "viewer.fr3.liveCannotRemove": "Ascunde FR3 înainte de a elimina fundalul activ.",
+  "viewer.fr3.adjustments": "Ajustări fundal FR3",
   "viewer.fr3.display": "Monitor FR3",
   "viewer.fr3.alwaysFullscreen": "FR3 este afișat întotdeauna pe tot ecranul.",
-  "viewer.fr3.imageLoadError": "Imaginea nu a putut fi încărcată."
+  "viewer.fr3.imageLoadError": "Imaginea nu a putut fi încărcată.",
+  "viewer.fr3.videoLoadError": "Clipul MP4 nu poate fi redat."
 }

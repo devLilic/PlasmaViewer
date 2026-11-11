@@ -29,9 +29,10 @@ position and no flip.
 `displayId`, `selectedBackgroundId`, `activeBackgroundId`, and a full image
 transform (`brightness`, `contrast`, `saturation`, `zoom`, `panX`, `panY`,
 `flipX`). `backgrounds` lists local gallery entries with their ID, display name,
-availability and a Viewer-managed image URL. `defaultImage` remains in the state
-as a compatibility descriptor for the active FR3 image; it does not restore an
-FR2 background layer and the HTTP protocol does not expose gallery source paths.
+availability and a Viewer-managed media URL. MP4 entries add `kind: "video"`.
+`defaultImage` remains an image-only compatibility descriptor. With an MP4
+active on FR3, it is null and the image-only default bridge returns no image.
+The gallery URLs do not expose source paths.
 The additive `outputOrder` object defaults to `{fr2: 3, fr3: 1}`. Values are
 normalized to integers from 0 to 100; the higher value places that native output
 window above the other, and equal values place FR2 above FR3.
@@ -45,8 +46,8 @@ columns and compact 16:9 previews. FR2 and FR3 labels sit at the top left inside
 their respective preview cards. The FR2 preview shows only the onAIR image
 received from `plasma.test`. The FR3 preview uses the selected gallery entry;
 selection changes the preview but does not change the live background. `Afișează`
-applies the selected background to FR3, and the previous live image remains in
-place until the new image is ready. The same loading behavior applies when a new
+applies the selected background to FR3, and the previous live background remains
+in place until the new media is ready. The same loading behavior applies when a new
 onAIR image replaces the current FR2 image. FR3's brightness, contrast, saturation,
 zoom, position and horizontal flip are independent of the FR2 adjustments and
 apply live. Slider changes do not alter native window bounds, fullscreen state,
@@ -60,9 +61,14 @@ alter or reset either transform. Output display selection is not in Control:
 Settings contains one monitor selector shared by FR2 and FR3, and their persistent
 relative z-index controls.
 
-FR3 images are imported into a managed local gallery, copied into Viewer data,
-and validated as images before import. Gallery names and entries persist across
-restarts. The gallery is a single row with local horizontal scrolling when
+The FR3 **Adaugă fișiere** dialog accepts images and MP4 clips together. Viewer
+copies both into its managed gallery and persists entries across restarts.
+Selecting an MP4 plays a muted loop in the preview. **Afișează** becomes available
+after the preview decodes its first frame. On FR3 the clip starts from the
+beginning, loops without sound and uses the same transform as an image.
+Hiding FR3 stops its player. An unplayable clip shows an error in the preview.
+Managed video URLs stream byte ranges for playback and seeking.
+The gallery is a single row with local horizontal scrolling when
 needed; long names are truncated visually without changing the saved name.
 Names initially come from imported filenames; rename controls are no longer
 shown in the gallery (the typed rename API is retained for compatibility).
@@ -72,17 +78,18 @@ selection and settings unchanged. Acceptance deletes only the managed copy,
 never the source file. Main rechecks whether the item became live while the
 confirmation was open before deleting it.
 Selecting an item changes only the preview selection; the selected and
-active IDs are persisted separately. An enabled active image cannot be removed
+active IDs are persisted separately. An enabled active background cannot be removed
 until FR3 is explicitly hidden/disconnected or another background is applied;
 being temporarily covered by fullscreen FR2 does not unlock removal.
 Legacy settings with one `defaultImagePath` are copied into the
 gallery at startup and become both the selected and active item; existing FR3
-enabled state and color settings are retained. Invalid or missing gallery files
-remain unavailable and are not displayed.
+enabled state and color settings are retained. Missing files and invalid images
+remain unavailable. If a present MP4 cannot be decoded, the preview reports
+the error and keeps **Afișează** disabled for that clip.
 
 The first legacy-image migration preserves the original settings file as
 `viewer-settings.pre-dual-preview.json` in Viewer userData; retries do not
-overwrite that backup. Original imported image files are never deleted.
+overwrite that backup. Original imported files are never deleted.
 
 FR3 is a separate, fullscreen background window on the same display as FR2.
 It cannot receive focus or input. Updating either legacy display field updates

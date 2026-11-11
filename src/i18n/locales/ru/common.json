@@ -44,7 +44,7 @@
   "viewer.fr3.gallery": "Локальная галерея FR3",
   "viewer.fr3.galleryHint": "Выбор изображения меняет только предпросмотр.",
   "viewer.fr3.addFiles": "Добавить файлы",
-  "viewer.fr3.emptyGallery": "Галерея пуста. Добавьте изображения для FR3.",
+  "viewer.fr3.emptyGallery": "Добавьте изображения или видео MP4 для FR3.",
   "viewer.fr3.unavailable": "Отсутствует",
   "viewer.fr3.selectBackground": "Выбрать {{name}} для предпросмотра",
   "viewer.fr3.selected": "Выбрано",
@@ -52,9 +52,10 @@
   "viewer.fr3.editName": "Изменить название фона",
   "viewer.fr3.rename": "Переименовать",
   "viewer.fr3.remove": "Удалить",
-  "viewer.fr3.liveCannotRemove": "Сначала скройте FR3, чтобы удалить активное изображение.",
-  "viewer.fr3.adjustments": "Настройки изображения FR3",
+  "viewer.fr3.liveCannotRemove": "Сначала скройте FR3, чтобы удалить активный фон.",
+  "viewer.fr3.adjustments": "Настройки фона FR3",
   "viewer.fr3.display": "Экран FR3",
   "viewer.fr3.alwaysFullscreen": "FR3 всегда отображается в полноэкранном режиме.",
-  "viewer.fr3.imageLoadError": "Не удалось загрузить изображение."
+  "viewer.fr3.imageLoadError": "Не удалось загрузить изображение.",
+  "viewer.fr3.videoLoadError": "Не удалось воспроизвести видео MP4."
 }

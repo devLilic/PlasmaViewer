@@ -221,6 +221,53 @@ describe('viewer controller dual preview behavior', () => {
     expect(controller.getDefaultImageAsset()?.bytes.toString()).toBe('background')
   })
 
+  it('imports and restores MP4 backgrounds and serves video ranges through the managed protocol', async () => {
+    const image = await addBackground()
+    await controller.showFr3()
+    const source = path.join(storageDir, 'Retrospectiva.MP4')
+    writeFileSync(source, 'video bytes')
+    electron.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: [source, backgroundImage] })
+
+    const imported = await controller.importBackgrounds()
+    expect(imported.backgrounds).toHaveLength(3)
+    const video = imported.backgrounds.find(item => item.kind === 'video')!
+    expect(video).toMatchObject({ name: 'Retrospectiva', available: true, kind: 'video' })
+    expect(imported.fr3).toMatchObject({ selectedBackgroundId: video.id, activeBackgroundId: image.id })
+    expect(electron.showOpenDialog).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({
+      filters: [expect.objectContaining({ extensions: expect.arrayContaining(['png', 'mp4']) })],
+    }))
+
+    const shown = controller.showFr3()
+    expect(shown.fr3).toMatchObject({ activeBackgroundId: video.id, visible: true })
+    expect(shown.defaultImage).toBeNull()
+    expect(controller.getDefaultImageAsset()).toBeNull()
+    expect(controller.getDefaultImageSourcePath()).toBeNull()
+
+    const handler = electron.protocolHandle.mock.calls[0][1]
+    const full = await handler(new Request(video.url))
+    expect(full.status).toBe(200)
+    expect(full.headers.get('content-type')).toBe('video/mp4')
+    expect(await full.text()).toBe('video bytes')
+    const partial = await handler(new Request(video.url, { headers: { Range: 'bytes=6-' } }))
+    expect(partial.status).toBe(206)
+    expect(partial.headers.get('content-range')).toBe('bytes 6-10/11')
+    expect(await partial.text()).toBe('bytes')
+    const suffix = await handler(new Request(video.url, { headers: { Range: 'bytes=-5' } }))
+    expect(suffix.headers.get('content-range')).toBe('bytes 6-10/11')
+    expect(await suffix.text()).toBe('bytes')
+    const invalid = await handler(new Request(video.url, { headers: { Range: 'bytes=11-' } }))
+    expect(invalid.status).toBe(416)
+    expect(invalid.headers.get('content-range')).toBe('bytes */11')
+    const legacy = await handler(new Request('plasma-viewer-background://current/image'))
+    expect(legacy.status).toBe(404)
+
+    const { ViewerController } = await import('../../../electron/main/viewer/viewerController')
+    const restored = new ViewerController().getState()
+    expect(restored.backgrounds).toEqual(imported.backgrounds)
+    expect(restored.fr3).toMatchObject({ selectedBackgroundId: video.id, activeBackgroundId: video.id, visible: false })
+    expect(readFileSync(source, 'utf8')).toBe('video bytes')
+  })
+
   it('sends the configured default image to FR2 for an article without an image', async () => {
     const background = await addBackground()
     await controller.selectBackground(background.id)

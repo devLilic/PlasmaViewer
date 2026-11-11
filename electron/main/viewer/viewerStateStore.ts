@@ -1,5 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { getBackgroundFormat } from './viewerBackgroundFormats'
 import { DEFAULT_VIEWER_OUTPUT_ORDER, normalizeOutputOrder, normalizeTransform, type ViewerFr3Settings, type ViewerOutputOrder, type ViewerTransformDefaults, type ViewerWindowBounds, type ViewerWindowSettings } from '../../../src/shared/viewer/contracts'
 
 export interface PersistedBackground { id: string; name: string; fileName: string }
@@ -96,7 +97,8 @@ export function normalizeBackgrounds(value: unknown): PersistedBackground[] {
     if (!entry || typeof entry !== 'object') return false
     const valid = typeof entry.id === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(entry.id)
       && typeof entry.name === 'string' && entry.name.trim().length > 0
-      && typeof entry.fileName === 'string' && /^[a-zA-Z0-9-]+\.(png|jpe?g|webp|gif|bmp)$/i.test(entry.fileName)
+      && typeof entry.fileName === 'string' && /^[a-zA-Z0-9-]+\.[a-zA-Z0-9]+$/.test(entry.fileName)
+      && getBackgroundFormat(entry.fileName) !== null
       && !ids.has(entry.id)
     if (valid) ids.add(entry.id)
     return valid

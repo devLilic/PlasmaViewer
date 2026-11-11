@@ -95,6 +95,12 @@ Modulul database/Drizzle este încărcat dinamic numai când ambele opțiuni `fe
 
 `npm run test:unit`: **FAIL**, 186/191 teste trec. Eșecurile sunt în testele bazei de date (driverul `better-sqlite3` are ABI incompatibil cu Node-ul local), `controllerDualPreview.spec.ts` (așteptarea stării topmost pentru FR3) și `keyboardGeometry.spec.ts` (așteptările de resize nu corespund comenzilor produse). TypeScript și buildurile Vite pentru renderer/main/preload: **PASS**. Inspectarea bundle-ului confirmă că entrypoint-ul main nu importă static chunkul `createDatabaseMainModule`; acesta este referit prin `import()` condițional. `npm run build`: **PASS** cu descărcarea runtime-ului Electron permisă; installerul local `release/1.0.2/PlasmaVu-1.0.2-x64.exe` a fost produs. `git diff --check`: **PASS** (doar avertismentele Git despre conversia LF/CRLF). Verificarea manuală a închiderii normale/eșecului de pornire nu a fost efectuată. Taskul rămâne In progress până la remedierea/testarea eșecurilor și verificarea manuală; datele existente ale utilizatorului nu au fost folosite pentru testare.
 
+## PV-017 — 2026-11-11 — Completed
+
+Galeria locală FR3 acceptă imagini și MP4 din același dialog. Clipurile persistă în galerie și se redau în buclă, fără sunet, în previzualizare și pe FR3. Integrarea pentru imaginea implicită continuă să folosească numai imagini.
+
+TypeScript, build Vite și testul Electron cu `Retrospectiva.mp4` au trecut. Suita Viewer/IPC are 60 de teste trecute și trei eșecuri preexistente. Testul Electron a folosit un profil temporar și răspunsuri simulate la dialogul de import. Verificarea multi-monitor rămâne deschisă. Detalii în [PV-017](task-briefs/PV-017.md).
+
 ## Format pentru intrări noi
 
 Pentru fiecare task finalizat, înlocuiește sau adaugă un rând care include:

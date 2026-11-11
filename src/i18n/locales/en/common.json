@@ -44,7 +44,7 @@
   "viewer.fr3.gallery": "FR3 local gallery",
   "viewer.fr3.galleryHint": "Selecting an image changes only the preview.",
   "viewer.fr3.addFiles": "Add files",
-  "viewer.fr3.emptyGallery": "The gallery is empty. Add images for FR3.",
+  "viewer.fr3.emptyGallery": "Add images or MP4 videos for FR3.",
   "viewer.fr3.unavailable": "Missing",
   "viewer.fr3.selectBackground": "Select {{name}} for preview",
   "viewer.fr3.selected": "Selected",
@@ -52,9 +52,10 @@
   "viewer.fr3.editName": "Edit background name",
   "viewer.fr3.rename": "Rename",
   "viewer.fr3.remove": "Remove",
-  "viewer.fr3.liveCannotRemove": "Hide FR3 before removing the active image.",
-  "viewer.fr3.adjustments": "FR3 image adjustments",
+  "viewer.fr3.liveCannotRemove": "Hide FR3 before removing the active background.",
+  "viewer.fr3.adjustments": "FR3 background adjustments",
   "viewer.fr3.display": "FR3 display",
   "viewer.fr3.alwaysFullscreen": "FR3 always uses fullscreen mode.",
-  "viewer.fr3.imageLoadError": "The image could not be loaded."
+  "viewer.fr3.imageLoadError": "The image could not be loaded.",
+  "viewer.fr3.videoLoadError": "The MP4 video could not be played."
 }

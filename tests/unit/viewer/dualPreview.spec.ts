@@ -45,12 +45,12 @@ describe('dual preview persistence and gallery', () => {
     expect(JSON.parse(readFileSync(path.join(dir, 'viewer-settings.pre-dual-preview.json'), 'utf8')).defaultImagePath).toBe('original.png')
   })
 
-  it('copies imported images, renames descriptors, and removes only managed copies', () => {
+  it('copies imported images, renames descriptors, and removes only managed copies', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'pv-gallery-'))
     const source = path.join(dir, 'original.png')
     writeFileSync(source, 'image-bytes')
     const gallery = createBackgroundLibrary(path.join(dir, 'managed'), () => true)
-    const [entry] = gallery.importImages([source])
+    const [entry] = await gallery.importFiles([source])
     expect(readFileSync(gallery.resolvePath(entry.id)!, 'utf8')).toBe('image-bytes')
     expect(gallery.describe()[0]).toMatchObject({ id: entry.id, available: true })
     gallery.rename(entry.id, 'Punctul pe Azi')
@@ -62,12 +62,12 @@ describe('dual preview persistence and gallery', () => {
     expect(gallery.resolvePath('../original.png')).toBeNull()
   })
 
-  it('validates all files before adding any entry', () => {
+  it('validates all files before adding any entry', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'pv-gallery-'))
     const source = path.join(dir, 'bad.png')
     writeFileSync(source, 'not an image')
     const gallery = createBackgroundLibrary(path.join(dir, 'managed'), () => false)
-    expect(() => gallery.importImages([source])).toThrow()
+    await expect(gallery.importFiles([source])).rejects.toThrow()
     expect(gallery.entries()).toEqual([])
   })
 

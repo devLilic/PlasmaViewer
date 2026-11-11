@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getViewerKeyboardAdjustment, maxViewerPanForZoom, type ViewerState, type ViewerTransform, type ViewerTransformDefaults } from '@/shared/viewer/contracts'
+import { getViewerKeyboardAdjustment, maxViewerPanForZoom, type ViewerBackground, type ViewerState, type ViewerTransform, type ViewerTransformDefaults } from '@/shared/viewer/contracts'
 import { isAutoUpdateEnabled } from '@/shared/auto-update/activation'
 import UpdateFeature from '@/features/update'
 import { useTranslation } from 'react-i18next'
@@ -98,6 +98,8 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
   const canDisplay = Boolean(state.activeImage)
   const outputsLive = state.visible || state.fr3.visible
   const selectedBackground = state.backgrounds.find(background => background.id === state.fr3.selectedBackgroundId) ?? null
+  const [readyVideoUrl, setReadyVideoUrl] = useState<string | null>(null)
+  const canShowFr3 = selectedBackground?.available && (selectedBackground.kind !== 'video' || selectedBackground.url === readyVideoUrl)
   const [keyboardAdjustEnabled, setKeyboardAdjustEnabled] = useState(false)
   const keyboardModeButtonRef = useRef<HTMLButtonElement>(null)
   const keyboardDialogCloseRef = useRef<HTMLButtonElement>(null)
@@ -206,23 +208,23 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
           <div className="preview-card">
             <div className="preview-card-heading"><h1 id="fr3-heading" className="column-title">FR3</h1><span className="preview-heading-spacer" aria-hidden="true" /></div>
             <div className="preview fr3-preview" aria-label={t('viewer.fr3.preview', { defaultValue: 'Previzualizare fundal FR3' })}>
-              {selectedBackground?.available ? <BackgroundImage selected={selectedBackground} transform={state.fr3.transform} onError={() => setNotice(t('viewer.fr3.imageLoadError', { defaultValue: 'Imaginea nu a putut fi încărcată.' }))} /> : <div className="empty">{t('viewer.fr3.noSelection', { defaultValue: 'Selectează un fundal din galerie' })}</div>}
+              {selectedBackground?.available ? <BackgroundLayers background={selectedBackground} transform={state.fr3.transform} playing={!hidden} onVideoReady={setReadyVideoUrl} /> : <div className="empty">{t('viewer.fr3.noSelection', { defaultValue: 'Selectează un fundal din galerie' })}</div>}
               <span className={`preview-badge ${state.fr3.visible && selectedBackground?.id === state.fr3.activeBackgroundId ? 'applied' : ''}`}>{state.fr3.visible && selectedBackground?.id === state.fr3.activeBackgroundId ? t('viewer.fr3.live', { defaultValue: 'LIVE' }) : t('viewer.fr3.previewOnly', { defaultValue: 'PREVIEW' })}</span>
             </div>
             <div className="preview-meta fr3-preview-meta">
               <div><strong>{selectedBackground?.name ?? t('viewer.fr3.noSelection', { defaultValue: 'Selectează un fundal din galerie' })}</strong><small>{state.fr3.visible ? t('viewer.fr3.visible', { defaultValue: 'FR3 este afișat' }) : t('viewer.fr3.hidden', { defaultValue: 'FR3 este ascuns' })}</small></div>
-              <div className="actions"><button className="secondary" disabled={!state.fr3.enabled} onClick={() => void runAction(window.viewerApi.hideFr3(), setNotice)}>{t('viewer.hide', { defaultValue: 'Ascunde' })}</button><button className="primary" disabled={!selectedBackground?.available} onClick={() => void runAction(window.viewerApi.showFr3(), setNotice)}>{t('viewer.show', { defaultValue: 'Afișează' })}</button></div>
+              <div className="actions"><button className="secondary" disabled={!state.fr3.enabled} onClick={() => void runAction(window.viewerApi.hideFr3(), setNotice)}>{t('viewer.hide', { defaultValue: 'Ascunde' })}</button><button className="primary" disabled={!canShowFr3} onClick={() => void runAction(window.viewerApi.showFr3(), setNotice)}>{t('viewer.show', { defaultValue: 'Afișează' })}</button></div>
             </div>
           </div>
           <section className="gallery-card" aria-label={t('viewer.fr3.gallery', { defaultValue: 'Galerie locală FR3' })}>
             <div className="gallery-heading"><div><h2>{t('viewer.fr3.gallery', { defaultValue: 'Galerie locală FR3' })}</h2><p>{t('viewer.fr3.galleryHint', { defaultValue: 'Selectarea schimbă doar previzualizarea.' })}</p></div><button className="secondary import-button" onClick={() => void runAction(window.viewerApi.importBackgrounds(), setNotice)}>{t('viewer.fr3.addFiles', { defaultValue: 'Adaugă fișiere' })}</button></div>
             <div className="background-gallery">
-              {state.backgrounds.length === 0 && <p className="gallery-empty">{t('viewer.fr3.emptyGallery', { defaultValue: 'Galeria este goală. Adaugă imagini pentru FR3.' })}</p>}
+              {state.backgrounds.length === 0 && <p className="gallery-empty">{t('viewer.fr3.emptyGallery', { defaultValue: 'Adaugă imagini sau clipuri MP4 pentru FR3.' })}</p>}
               {state.backgrounds.map(background => <BackgroundTile key={background.id} background={background} selected={background.id === state.fr3.selectedBackgroundId} applied={background.id === state.fr3.activeBackgroundId} onSelect={() => void runAction(window.viewerApi.selectBackground(background.id), setNotice)} onRemove={() => void runAction(window.viewerApi.removeBackground(background.id), setNotice)} removeDisabled={background.id === state.fr3.activeBackgroundId && state.fr3.enabled} />)}
             </div>
           </section>
           <details className="panel transform-panel fr3-transform-panel">
-            <summary className="adjustment-summary">{t('viewer.fr3.adjustments', { defaultValue: 'Ajustări imagine FR3' })}</summary>
+            <summary className="adjustment-summary">{t('viewer.fr3.adjustments', { defaultValue: 'Ajustări fundal FR3' })}</summary>
             <Range label={t('viewer.brightness', { defaultValue: 'Luminozitate' })} value={state.fr3.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateFr3({ brightness })} />
             <Range label={t('viewer.contrast', { defaultValue: 'Contrast' })} value={state.fr3.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateFr3({ contrast })} />
             <Range label={t('viewer.saturation', { defaultValue: 'Saturație' })} value={state.fr3.transform.saturation} min={0} max={200} unit="%" onChange={saturation => updateFr3({ saturation })} />
@@ -284,14 +286,17 @@ function ArrowKeyCluster() {
 
 function BackgroundTile({ background, selected, applied, onSelect, onRemove, removeDisabled }: { background: ViewerState['backgrounds'][number]; selected: boolean; applied: boolean; onSelect: () => void; onRemove: () => void; removeDisabled: boolean }) {
   const { t } = useTranslation()
+  const name = background.kind === 'video' ? `${background.name} (MP4)` : background.name
   return <div className={`background-tile ${selected ? 'selected' : ''}`}>
     <div className="background-select-wrap">
-      <button type="button" className="background-select" disabled={!background.available} onClick={onSelect} aria-label={t('viewer.fr3.selectBackground', { name: background.name, defaultValue: `Select ${background.name} for preview` })} aria-pressed={selected}>
-        <span className="background-thumbnail">{background.available ? <img src={background.url} alt="" /> : <span aria-hidden="true">{t('viewer.fr3.unavailable', { defaultValue: 'Lipsă' })}</span>}</span>
+      <button type="button" className="background-select" disabled={!background.available} onClick={onSelect} aria-label={t('viewer.fr3.selectBackground', { name, defaultValue: `Select ${name} for preview` })} aria-pressed={selected}>
+        <span className="background-thumbnail">{!background.available ? <span aria-hidden="true">{t('viewer.fr3.unavailable', { defaultValue: 'Lipsă' })}</span>
+          : background.kind === 'video' ? <span className="video-thumbnail"><span aria-hidden="true">▶</span> MP4</span>
+          : <img src={background.url} alt="" />}</span>
         <span className="background-name">{background.name}</span>
         <span className="background-badges">{selected && <i>{t('viewer.fr3.selected', { defaultValue: 'Selectat' })}</i>}{applied && <i className="live-badge">{t('viewer.fr3.applied', { defaultValue: 'LIVE' })}</i>}</span>
       </button>
-      <button type="button" className="tile-remove" disabled={removeDisabled} title={removeDisabled ? t('viewer.fr3.liveCannotRemove', { defaultValue: 'Ascunde FR3 înainte de a elimina imaginea activă.' }) : t('viewer.fr3.remove', { defaultValue: 'Elimină din galerie' })} aria-label={t('viewer.fr3.remove', { defaultValue: 'Elimină din galerie' })} onClick={onRemove}>×</button>
+      <button type="button" className="tile-remove" disabled={removeDisabled} title={removeDisabled ? t('viewer.fr3.liveCannotRemove', { defaultValue: 'Ascunde FR3 înainte de a elimina fundalul activ.' }) : t('viewer.fr3.remove', { defaultValue: 'Elimină din galerie' })} aria-label={t('viewer.fr3.remove', { defaultValue: 'Elimină din galerie' })} onClick={onRemove}>×</button>
     </div>
   </div>
 }
@@ -341,33 +346,68 @@ function useActiveImageLayers(activeImage: ViewerState['activeImage'], transform
 }
 
 function Background({ state }: { state: ViewerState }) {
-  const { t } = useTranslation()
   const applied = state.backgrounds.find(background => background.id === state.fr3.activeBackgroundId && background.available)
-  const [displayed, setDisplayed] = useState<{ url: string; transform: ViewerTransform } | null>(null)
-  const [loadError, setLoadError] = useState(false)
-
-  useEffect(() => {
-    if (!applied) setDisplayed(null)
-  }, [applied?.url])
-
   return <main className="output" aria-label="Fereastră fundal FR3">
-    {displayed && <img className="background-image previous-image" src={displayed.url} alt="" style={imageStyle(state.fr3.transform)} />}
-    {applied && displayed?.url !== applied.url && <img className="background-image pending-image" src={applied.url} alt="" aria-hidden="true" style={imageStyle(state.fr3.transform)} onLoad={() => { setLoadError(false); setDisplayed({ url: applied.url, transform: state.fr3.transform }) }} onError={() => setLoadError(true)} />}
-    {applied && displayed?.url === applied.url && <img className="background-image current-image" src={applied.url} alt="" style={imageStyle(state.fr3.transform)} />}
-    {loadError && <span className="image-load-error" role="status">{t('viewer.fr3.imageLoadError', { defaultValue: 'Imaginea nu a putut fi încărcată.' })}</span>}
+    {state.fr3.visible && applied && <BackgroundLayers background={applied} transform={state.fr3.transform} playing />}
   </main>
 }
 
-function BackgroundImage({ selected, transform, onError }: { selected: ViewerState['backgrounds'][number]; transform: ViewerTransform; onError: () => void }) {
-  const [displayed, setDisplayed] = useState<{ url: string; transform: ViewerTransform } | null>(null)
+function BackgroundLayers({ background, transform, playing, onVideoReady }: {
+  background: ViewerBackground
+  transform: ViewerTransform
+  playing: boolean
+  onVideoReady?: (url: string | null) => void
+}) {
+  const { t } = useTranslation()
+  const [displayed, setDisplayed] = useState<ViewerBackground | null>(null)
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const readyVideo = displayed?.url === background.url && background.kind === 'video' && failedUrl !== background.url ? background.url : null
   useEffect(() => {
-    if (!selected.available) setDisplayed(null)
-  }, [selected.url, selected.available])
+    onVideoReady?.(readyVideo)
+    return () => onVideoReady?.(null)
+  }, [onVideoReady, readyVideo])
+  const layers = displayed && displayed.url !== background.url ? [displayed, background] : [background]
   return <>
-    {displayed && <img className="background-image previous-image" src={displayed.url} alt="" style={imageStyle(transform)} />}
-    {selected.available && displayed?.url !== selected.url && <img className="background-image pending-image" src={selected.url} alt="" aria-hidden="true" style={imageStyle(transform)} onLoad={() => setDisplayed({ url: selected.url, transform })} onError={onError} />}
-    {selected.available && displayed?.url === selected.url && <img className="background-image current-image" src={selected.url} alt={selected.name} style={imageStyle(transform)} />}
+    {layers.map(layer => {
+      const current = displayed?.url === layer.url
+      const className = `background-image ${current ? 'current-image' : 'pending-image'}`
+      const onReady = () => {
+        if (layer.url !== background.url) return
+        setDisplayed(layer)
+        setFailedUrl(null)
+      }
+      const onError = () => {
+        if (layer.url !== background.url) return
+        setFailedUrl(layer.url)
+      }
+      return layer.kind === 'video'
+        ? <BackgroundVideo key={layer.url} src={layer.url} className={className} transform={transform} playing={playing && current} onReady={onReady} onError={onError} />
+        : <img key={layer.url} className={className} src={layer.url} alt={current ? layer.name : ''} style={imageStyle(transform)} onLoad={onReady} onError={onError} />
+    })}
+    {failedUrl === background.url && <span className="image-load-error" role="status">{background.kind === 'video'
+      ? t('viewer.fr3.videoLoadError', { defaultValue: 'Clipul MP4 nu poate fi redat.' })
+      : t('viewer.fr3.imageLoadError', { defaultValue: 'Imaginea nu a putut fi încărcată.' })}</span>}
   </>
+}
+
+function BackgroundVideo({ src, className, transform, playing, onReady, onError }: {
+  src: string
+  className: string
+  transform: ViewerTransform
+  playing: boolean
+  onReady: () => void
+  onError: () => void
+}) {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const video = ref.current
+    if (!video) return
+    if (playing) void video.play().catch(() => undefined)
+    else video.pause()
+  }, [playing])
+
+  return <video ref={ref} className={className} src={src} style={imageStyle(transform)} muted loop playsInline preload="auto"
+    aria-hidden="true" onLoadedData={event => event.currentTarget.videoWidth > 0 ? onReady() : onError()} onError={onError} />
 }
 
 function Settings({ state, hidden, page, onNavigate }: { state: ViewerState; hidden: boolean; page: 'control' | 'settings'; onNavigate: (page: 'control' | 'settings') => void }) {

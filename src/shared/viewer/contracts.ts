@@ -56,6 +56,7 @@ export interface ViewerDefaultImage {
 export interface ViewerBackground extends ViewerDefaultImage {
   id: string
   available: boolean
+  kind?: 'video'
 }
 
 export type ViewerBoundsDimension = 'width' | 'height'

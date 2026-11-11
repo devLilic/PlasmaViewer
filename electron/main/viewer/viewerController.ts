@@ -7,6 +7,7 @@ import { indexHtmlPath, VITE_DEV_SERVER_URL } from '../bootstrap/paths'
 import { createViewerStateStore } from './viewerStateStore'
 import { registerViewerBackgroundProtocol } from './viewerBackgroundProtocol'
 import { createBackgroundLibrary } from './viewerBackgroundLibrary'
+import { backgroundExtensions, getBackgroundFormat } from './viewerBackgroundFormats'
 import { viewerMessage } from './viewerMessages'
 import {
   createTransformDefaults,
@@ -55,7 +56,7 @@ export class ViewerController {
     if (!persisted.backgrounds.length && persisted.defaultImagePath) {
       this.store.backupLegacySettings()
       try {
-        const [imported] = this.backgrounds.importImages([persisted.defaultImagePath])
+        const imported = this.backgrounds.importLegacyImage(persisted.defaultImagePath)
         persisted.fr3.selectedBackgroundId = imported.id
         persisted.fr3.activeBackgroundId = imported.id
       } catch {
@@ -150,14 +151,10 @@ export class ViewerController {
   getDefaultImageAsset(): { bytes: Buffer; contentType: string } | null {
     const imagePath = this.getDefaultImageSourcePath()
     if (!imagePath) return null
-    const contentTypeByExtension: Record<string, string> = {
-      '.bmp': 'image/bmp', '.gif': 'image/gif', '.jpeg': 'image/jpeg',
-      '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp',
-    }
-    const contentType = contentTypeByExtension[path.extname(imagePath).toLowerCase()]
-    if (!contentType) return null
+    const format = getBackgroundFormat(imagePath)
+    if (format?.kind !== 'image') return null
     try {
-      return { bytes: readFileSync(imagePath), contentType }
+      return { bytes: readFileSync(imagePath), contentType: format.contentType }
     } catch {
       return null
     }
@@ -166,7 +163,7 @@ export class ViewerController {
   getDefaultImageSourcePath(): string | null {
     const id = this.state.fr3.activeBackgroundId ?? ''
     const imagePath = this.backgrounds.resolvePath(id)
-    return imagePath && this.backgrounds.available(id) ? imagePath : null
+    return imagePath && getBackgroundFormat(imagePath)?.kind === 'image' && this.backgrounds.available(id) ? imagePath : null
   }
 
   async execute(command: ViewerCommand) {
@@ -289,14 +286,14 @@ export class ViewerController {
     const options: OpenDialogOptions = {
       title: viewerMessage('importTitle'),
       properties: ['openFile', 'multiSelections'],
-      filters: [{ name: viewerMessage('images'), extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }],
+      filters: [{ name: viewerMessage('backgroundFiles'), extensions: backgroundExtensions }],
     }
     const result = this.controlWindow
       ? await dialog.showOpenDialog(this.controlWindow, options)
       : await dialog.showOpenDialog(options)
     if (result.canceled || !result.filePaths[0]) return this.getState()
 
-    const imported = this.backgrounds.importImages(result.filePaths)
+    const imported = await this.backgrounds.importFiles(result.filePaths)
     this.state.backgrounds = this.backgrounds.describe()
     this.state.fr3.selectedBackgroundId = imported[0]?.id ?? this.state.fr3.selectedBackgroundId
     this.state.error = null
@@ -394,12 +391,13 @@ export class ViewerController {
   private refreshActiveBackground() {
     const id = this.state.fr3.activeBackgroundId
     const descriptor = this.state.backgrounds.find(item => item.id === id && item.available)
-    this.state.defaultImage = descriptor ? { name: descriptor.name, url: descriptor.url } : null
+    this.state.defaultImage = descriptor && descriptor.kind !== 'video' ? { name: descriptor.name, url: descriptor.url } : null
+    return descriptor ?? null
   }
 
   private refreshBackgrounds() {
     this.state.backgrounds = this.backgrounds.describe()
-    this.refreshActiveBackground()
+    return this.refreshActiveBackground()
   }
 
   resetTransform() {
@@ -598,8 +596,8 @@ export class ViewerController {
     if (!this.fr3Window) return
     this.refreshDisplays()
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
-    this.refreshBackgrounds()
-    if (this.state.fr3.activeBackgroundId && !this.state.defaultImage) this.state.error = viewerMessage('lostBackground')
+    const activeBackground = this.refreshBackgrounds()
+    if (this.state.fr3.activeBackgroundId && !activeBackground) this.state.error = viewerMessage('lostBackground')
     const requiresFullscreenUpdate = !this.fr3Window.isFullScreen() || !sameBounds(this.fr3Window.getBounds(), display.bounds)
     if (requiresFullscreenUpdate) {
       if (this.fr3Window.isFullScreen()) this.fr3Window.setFullScreen(false)
@@ -611,7 +609,7 @@ export class ViewerController {
     if (!this.fr3Window.isAlwaysOnTop()) this.fr3Window.setAlwaysOnTop(true, 'screen-saver')
     const shouldShow = !this.fr3Suppressed && shouldShowFr3(
       this.state.fr3.enabled,
-      this.state.defaultImage,
+      activeBackground,
       this.state.window.fullscreen && this.state.visible,
       true,
       this.isFr2AboveFr3(),
