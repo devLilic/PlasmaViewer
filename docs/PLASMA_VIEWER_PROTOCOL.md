@@ -1,5 +1,8 @@
 # PlasmaViewer protocol v1
 
+The desktop interface labels FR2 **Plasme** and FR3 **Background**. The
+protocol and persisted settings use the FR2 and FR3 identifiers.
+
 PlasmaViewer listens on `127.0.0.1:47832` by default. Every request requires
 `Authorization: Bearer <PLASMA_VIEWER_TOKEN>`. The server accepts requests only
 on loopback:
@@ -61,7 +64,7 @@ alter or reset either transform. Output display selection is not in Control:
 Settings contains one monitor selector shared by FR2 and FR3, and their persistent
 relative z-index controls.
 
-The FR3 **Adaugă fișiere** dialog accepts images and MP4 clips together. Viewer
+The **Adaugă fișiere** dialog in **Background** accepts images and MP4 clips together. Viewer
 copies both into its managed gallery and persists entries across restarts.
 Selecting an MP4 plays a muted loop in the preview. **Afișează** becomes available
 after the preview decodes its first frame. On FR3 the clip starts from the

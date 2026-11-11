@@ -101,7 +101,7 @@ export class ViewerController {
       this.controlWindow?.setTitle(controlTitle)
     })
     this.outputWindow = createSecureBrowserWindow({
-      title: 'PlasmaVu Output',
+      title: 'PlasmaVu Plasme',
       show: false,
       frame: false,
       movable: true,
@@ -708,7 +708,7 @@ function waitForFullScreenState(window: BrowserWindow, fullscreen: boolean) {
       if (settled) return
       cleanup()
       // Do not report windowed mode as applied while Electron still reports fullscreen.
-      reject(new Error(`PlasmaVu Output nu a confirmat ${fullscreen ? 'intrarea în' : 'ieșirea din'} fullscreen.`))
+      reject(new Error(`PlasmaVu Plasme nu a confirmat ${fullscreen ? 'intrarea în' : 'ieșirea din'} fullscreen.`))
     }, 5_000)
     if (fullscreen) window.on('enter-full-screen', check)
     else window.on('leave-full-screen', check)
