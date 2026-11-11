@@ -35,7 +35,19 @@ function App() {
 }
 
 function Navigation({ page, onChange }: { page: 'control' | 'settings'; onChange: (page: 'control' | 'settings') => void }) {
-  return <nav className="viewer-navigation" aria-label="Navigare Viewer"><button className={page === 'control' ? 'active' : ''} onClick={() => onChange('control')}>Control</button><button className={page === 'settings' ? 'active' : ''} onClick={() => onChange('settings')}>Settings</button></nav>
+  const { t } = useTranslation()
+  return <nav className="viewer-navigation" aria-label="Navigare Viewer"><button className={page === 'settings' ? 'active' : ''} onClick={() => onChange('settings')}><UiIcon name="settings" /> {t('viewer.navigation.settings', { defaultValue: 'Setări' })}</button><span className="navigation-divider" aria-hidden="true" /><button className={page === 'control' ? 'active' : ''} onClick={() => onChange('control')}><UiIcon name="play" /> Control</button></nav>
+}
+
+
+function UiIcon({ name }: { name: 'settings' | 'play' | 'stop' | 'hide' | 'plus' }) {
+  return <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+    {name === 'play' && <path d="M8 4v16l12-8z" fill="currentColor" stroke="none" />}
+    {name === 'stop' && <rect x="5" y="5" width="14" height="14" rx="1" fill="currentColor" stroke="none" />}
+    {name === 'plus' && <path d="M12 4v16M4 12h16" />}
+    {name === 'hide' && <><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.3 5.3A11 11 0 0 1 12 5c5 0 8.5 4.3 9.5 7a12 12 0 0 1-3 4.2M6.2 6.3A12 12 0 0 0 2.5 12c1 2.7 4.5 7 9.5 7 1.1 0 2.2-.2 3.1-.6" /></>}
+    {name === 'settings' && <><path d="M10 2h4l.6 2.5 2 .9 2.2-1.3 2.8 2.8-1.3 2.2.9 2L23 12v3l-2.3.6-.9 2 1.3 2.2-2.8 2.8-2.2-1.3-2 .9L14 24h-4l-.6-2.3-2-.9-2.2 1.3-2.8-2.8 1.3-2.2-.9-2L1 14v-3l2.3-.6.9-2-1.3-2.2 2.8-2.8 2.2 1.3 2-.9z" transform="translate(0 -1) scale(.92)" /><circle cx="11" cy="11" r="3" /></>}
+  </svg>
 }
 
 function Output({ state }: { state: ViewerState }) {
@@ -153,7 +165,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
       <header className="topbar">
         <Navigation page={page} onChange={onNavigate} />
         <div className="header-actions">
-          <button className={`onair-control ${outputsLive ? 'live' : ''}`} disabled={!outputsLive} onClick={() => void runAction(window.viewerApi.disconnectOutputs(), setNotice)} aria-label="Deconectează ferestrele Plasme și Background"><i /><span>{outputsLive ? 'ON AIR' : 'OFF AIR'}</span>{outputsLive && <b>DECONECTEAZĂ</b>}</button>
+          <button className={`onair-control ${outputsLive ? 'live' : ''}`} disabled={!outputsLive} onClick={() => void runAction(window.viewerApi.disconnectOutputs(), setNotice)} aria-label="Deconectează ferestrele Plasme și Background"><UiIcon name="stop" /><span>{t('viewer.stopOutputs', { defaultValue: 'Oprește toate ieșirile' })}</span></button>
         </div>
       </header>
 
@@ -161,14 +173,14 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
         <article className="output-column fr2-column" aria-labelledby="fr2-heading">
           <div className={`preview-card ${target === 'plasme' ? 'selected-output' : ''}`}>
             <div className="preview-card-heading">
-              <h1 id="fr2-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'plasme'} onClick={() => setTarget('plasme')}>Plasme</button></h1><span className="output-status">{state.visible ? 'ON AIR' : 'OFF AIR'}</span>
+              <h1 id="fr2-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'plasme'} onClick={() => setTarget('plasme')}>Plasme</button></h1><span className={`output-status ${state.visible ? 'is-live' : 'is-off'}`}>{state.visible ? 'ON AIR' : 'OFF AIR'}</span>
             </div>
             <div className="preview"><ImageLayers state={state} preview /></div>
             <div className="preview-meta">
               <div><strong>{state.activeImage?.title ?? 'Fără imagine'}</strong>{!state.activeImage && <small>Apasă onAIR în playlist</small>}{state.activeImage && <small className="image-source">Sursă locală: {state.activeImage.source ?? 'Fișier local indisponibil'}</small>}</div>
               <div className="actions">
-                <button className="secondary" disabled={!state.visible} onClick={() => void runAction(window.viewerApi.hideOutput(), setNotice)}>Ascunde</button>
-                <button className="primary" disabled={!canDisplay} onClick={() => void runAction(window.viewerApi.showOutput(), setNotice)}>Afișează</button>
+                <button className="secondary" disabled={!state.visible} onClick={() => void runAction(window.viewerApi.hideOutput(), setNotice)}><UiIcon name="hide" /> Ascunde</button>
+                <button className="primary" disabled={!canDisplay} onClick={() => void runAction(window.viewerApi.showOutput(), setNotice)}><UiIcon name="play" /> Afișează</button>
               </div>
             </div>
           </div>
@@ -176,23 +188,23 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
 
         <article className="output-column fr3-column" aria-labelledby="fr3-heading">
           <div className={`preview-card ${target === 'background' ? 'selected-output' : ''}`}>
-            <div className="preview-card-heading"><h1 id="fr3-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'background'} onClick={() => setTarget('background')}>Background</button></h1><span className="output-status">{state.fr3.visible ? 'ON AIR' : 'PREVIZUALIZARE'}</span></div>
+            <div className="preview-card-heading"><h1 id="fr3-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'background'} onClick={() => setTarget('background')}>Background</button></h1><span className={`output-status ${state.fr3.visible ? 'is-live' : ''}`}>{state.fr3.visible ? 'ON AIR' : 'PREVIZUALIZARE'}</span></div>
             <div className="preview fr3-preview" aria-label={t('viewer.fr3.preview', { defaultValue: 'Previzualizare Background' })}>
               {selectedBackground?.available ? <BackgroundLayers background={selectedBackground} transform={state.fr3.transform} playing={!hidden} onVideoReady={setReadyVideoUrl} /> : <div className="empty">{t('viewer.fr3.noSelection', { defaultValue: 'Selectează un fundal din galerie' })}</div>}
-              <span className={`preview-badge ${state.fr3.visible && selectedBackground?.id === state.fr3.activeBackgroundId ? 'applied' : ''}`}>{state.fr3.visible && selectedBackground?.id === state.fr3.activeBackgroundId ? t('viewer.fr3.live', { defaultValue: 'LIVE' }) : t('viewer.fr3.previewOnly', { defaultValue: 'PREVIEW' })}</span>
+
             </div>
             <div className="preview-meta fr3-preview-meta">
               <div><strong>{selectedBackground?.name ?? t('viewer.fr3.noSelection', { defaultValue: 'Selectează un fundal din galerie' })}</strong><small>{state.fr3.visible ? t('viewer.fr3.visible', { defaultValue: 'Background este afișat' }) : t('viewer.fr3.hidden', { defaultValue: 'Background este ascuns' })}</small></div>
-              <div className="actions"><button className="secondary" disabled={!state.fr3.enabled} onClick={() => void runAction(window.viewerApi.hideFr3(), setNotice)}>{t('viewer.hide', { defaultValue: 'Ascunde' })}</button><button className="primary" disabled={!canShowFr3} onClick={() => void runAction(window.viewerApi.showFr3(), setNotice)}>{t('viewer.show', { defaultValue: 'Afișează' })}</button></div>
+              <div className="actions"><button className="secondary" disabled={!state.fr3.enabled} onClick={() => void runAction(window.viewerApi.hideFr3(), setNotice)}><UiIcon name="hide" /> {t('viewer.hide', { defaultValue: 'Ascunde' })}</button><button className="primary" disabled={!canShowFr3} onClick={() => void runAction(window.viewerApi.showFr3(), setNotice)}><UiIcon name="play" /> {t('viewer.show', { defaultValue: 'Afișează' })}</button></div>
             </div>
           </div>
         </article>
       </section>
       <section className="inspector" aria-label={t('viewer.inspector.label', { defaultValue: 'Configurare ieșire' })}>
         <div className="inspector-target" role="group" aria-label={t('viewer.inspector.target', { defaultValue: 'Ieșire selectată' })}>
-          <span>{t('viewer.inspector.targetLabel', { defaultValue: 'Țintă' })}</span>
-          <button type="button" className={target === 'plasme' ? 'active' : ''} aria-pressed={target === 'plasme'} onClick={() => setTarget('plasme')}>Plasme</button>
-          <button type="button" className={target === 'background' ? 'active' : ''} aria-pressed={target === 'background'} onClick={() => setTarget('background')}>Background</button>
+          <span>{t('viewer.inspector.targetLabel', { defaultValue: 'Țintă' })}:</span>
+          <div className="target-segment"><button type="button" className={target === 'plasme' ? 'active' : ''} aria-pressed={target === 'plasme'} onClick={() => setTarget('plasme')}>Plasme</button>
+          <button type="button" className={target === 'background' ? 'active' : ''} aria-pressed={target === 'background'} onClick={() => setTarget('background')}>Background</button></div>
         </div>
         <div className="inspector-tabs" role="tablist" aria-label={t('viewer.inspector.tabs', { defaultValue: 'Configurare' })}>
           {(['source', 'aspect', 'settings'] as const).map(tab => <button key={tab} type="button" role="tab" aria-selected={inspectorTab === tab} className={inspectorTab === tab ? 'active' : ''} onClick={() => setInspectorTab(tab)}>{t(`viewer.inspector.${tab}`, { defaultValue: tab === 'source' ? 'Sursă' : tab === 'aspect' ? 'Aspect' : 'Setări' })}</button>)}
@@ -200,7 +212,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
         <div className="inspector-content">
           <div hidden={inspectorTab !== 'source' || target !== 'background'}>
           <section className="gallery-card" aria-label={t('viewer.fr3.gallery', { defaultValue: 'Galerie locală Background' })}>
-            <div className="gallery-heading"><div><h2>{t('viewer.fr3.gallery', { defaultValue: 'Galerie locală Background' })}</h2><p>{t('viewer.fr3.galleryHint', { defaultValue: 'Selectarea schimbă doar previzualizarea.' })}</p></div><button className="secondary import-button" onClick={() => void runAction(window.viewerApi.importBackgrounds(), setNotice)}>{t('viewer.fr3.addFiles', { defaultValue: 'Adaugă fișiere' })}</button></div>
+            <div className="gallery-heading"><div><h2>{t('viewer.fr3.gallery', { defaultValue: 'Galerie locală Background' })}</h2><p>{t('viewer.fr3.galleryHint', { defaultValue: 'Selectarea schimbă doar previzualizarea.' })}</p></div><button className="primary import-button" onClick={() => void runAction(window.viewerApi.importBackgrounds(), setNotice)}><UiIcon name="plus" /> {t('viewer.fr3.addFiles', { defaultValue: 'Adaugă fișiere' })}</button></div>
             <div className="background-gallery">
               {state.backgrounds.length === 0 && <p className="gallery-empty">{t('viewer.fr3.emptyGallery', { defaultValue: 'Adaugă imagini sau clipuri MP4 pentru Background.' })}</p>}
               {state.backgrounds.map(background => <BackgroundTile key={background.id} background={background} selected={background.id === state.fr3.selectedBackgroundId} applied={background.id === state.fr3.activeBackgroundId} onSelect={() => void runAction(window.viewerApi.selectBackground(background.id), setNotice)} onRemove={() => void runAction(window.viewerApi.removeBackground(background.id), setNotice)} removeDisabled={background.id === state.fr3.activeBackgroundId && state.fr3.enabled} />)}

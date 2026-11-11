@@ -67,5 +67,7 @@
   "viewer.inspector.settings": "Настройки",
   "viewer.inspector.plasmeSource": "Источник Plasme",
   "viewer.inspector.displayMode": "Режим отображения",
-  "viewer.inspector.backgroundFullscreen": "Background отображается во весь экран."
+  "viewer.inspector.backgroundFullscreen": "Background отображается во весь экран.",
+  "viewer.navigation.settings": "Настройки",
+  "viewer.stopOutputs": "Остановить все выходы"
 }

@@ -67,5 +67,7 @@
   "viewer.inspector.settings": "Setări",
   "viewer.inspector.plasmeSource": "Sursă Plasme",
   "viewer.inspector.displayMode": "Mod afișare",
-  "viewer.inspector.backgroundFullscreen": "Background este afișat pe tot ecranul."
+  "viewer.inspector.backgroundFullscreen": "Background este afișat pe tot ecranul.",
+  "viewer.navigation.settings": "Setări",
+  "viewer.stopOutputs": "Oprește toate ieșirile"
 }

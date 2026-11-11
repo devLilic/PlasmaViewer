@@ -67,5 +67,7 @@
   "viewer.inspector.settings": "Settings",
   "viewer.inspector.plasmeSource": "Plasme source",
   "viewer.inspector.displayMode": "Display mode",
-  "viewer.inspector.backgroundFullscreen": "Background is displayed fullscreen."
+  "viewer.inspector.backgroundFullscreen": "Background is displayed fullscreen.",
+  "viewer.navigation.settings": "Settings",
+  "viewer.stopOutputs": "Stop all outputs"
 }
