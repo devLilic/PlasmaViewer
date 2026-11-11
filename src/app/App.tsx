@@ -199,11 +199,6 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
         </article>
       </section>
       <section className="inspector" aria-label={t('viewer.inspector.label', { defaultValue: 'Configurare ieșire' })}>
-        <div className="inspector-target" role="group" aria-label={t('viewer.inspector.target', { defaultValue: 'Ieșire selectată' })}>
-          <span>{t('viewer.inspector.targetLabel', { defaultValue: 'Țintă' })}:</span>
-          <div className="target-segment"><button type="button" className={target === 'plasme' ? 'active' : ''} aria-pressed={target === 'plasme'} onClick={() => setTarget('plasme')}>Plasme</button>
-          <button type="button" className={target === 'background' ? 'active' : ''} aria-pressed={target === 'background'} onClick={() => setTarget('background')}>Background</button></div>
-        </div>
         <div className="inspector-tabs" role="tablist" aria-label={t('viewer.inspector.tabs', { defaultValue: 'Configurare' })}>
           {(['source', 'aspect', 'settings'] as const).map(tab => <button key={tab} type="button" role="tab" aria-selected={inspectorTab === tab} className={inspectorTab === tab ? 'active' : ''} onClick={() => setInspectorTab(tab)}>{t(`viewer.inspector.${tab}`, { defaultValue: tab === 'source' ? 'Sursă' : tab === 'aspect' ? 'Aspect' : 'Setări' })}</button>)}
         </div>

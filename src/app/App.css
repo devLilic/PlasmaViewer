@@ -328,12 +328,25 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .preview-meta { justify-content: center; }
 .preview-meta .actions { width: auto; }
 .preview-card { cursor: pointer; }
+.inspector-content .transform-panel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-inline: 20%;
+}
+.inspector-content .transform-panel .range:nth-of-type(1) { grid-area: 2 / 1; }
+.inspector-content .transform-panel .range:nth-of-type(2) { grid-area: 3 / 1; }
+.inspector-content .transform-panel .range:nth-of-type(3) { grid-area: 4 / 1; }
+.inspector-content .transform-panel .range:nth-of-type(4) { grid-area: 2 / 2; }
+.inspector-content .transform-panel .range:nth-of-type(5) { grid-area: 3 / 2; }
+.inspector-content .transform-panel .range:nth-of-type(6) { grid-area: 4 / 2; }
+.inspector-content .transform-panel .toggle-row { grid-area: 5 / 1; }
+.inspector-content .transform-panel .reset { grid-area: 5 / 2; }
 .inspector-content .background-tile { flex-basis: clamp(120px, 14.4%, 176px); width: clamp(120px, 14.4%, 176px); }
 .inspector-content .background-tile.selected .background-thumbnail { outline: 3px solid #29a3ff; outline-offset: -3px; }
 .tile-remove { opacity: 0; pointer-events: none; }
 .background-tile:hover .tile-remove, .background-tile:focus-within .tile-remove { opacity: 1; pointer-events: auto; }
 @media (hover: none) { .tile-remove { opacity: 1; pointer-events: auto; } }
 @media (max-width: 700px) {
+  .inspector-content .transform-panel { padding-inline: 8%; }
   .plasme-settings:not([hidden]) {
     grid-template-columns: 1fr;
     grid-template-areas: "mode" "geometry" "window";

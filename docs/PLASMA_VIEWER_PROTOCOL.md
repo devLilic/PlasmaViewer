@@ -5,8 +5,8 @@ protocol and persisted settings use the FR2 and FR3 identifiers.
 In development, Background starts hidden even when previously enabled and
 appears after an explicit show action or an output show command.
 
-Control presents both output previews above a shared inspector. Its target
-selector chooses Plasme or Background, and its Sursă, Aspect and Setări tabs
+Control presents both output previews above a shared inspector. Selecting a
+preview chooses Plasme or Background, and its Sursă, Aspect and Setări tabs
 show controls for that output. Plasme retains fullscreen and windowed modes,
 geometry and keyboard adjustment. Background uses fullscreen. The gallery
 continues to select Background previews independently of the live output.
