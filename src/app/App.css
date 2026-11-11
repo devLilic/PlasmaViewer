@@ -307,3 +307,27 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 @media (max-width: 420px) {
   .inspector-content .transform-panel { grid-template-columns: 1fr; }
 }
+
+/* Place Plasme window controls alongside its geometry on wider screens. */
+.plasme-settings:not([hidden]) {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+  grid-template-areas: "geometry mode" "geometry window";
+  gap: 8px 12px;
+  align-items: start;
+}
+.plasme-settings > .inspector-mode { grid-area: mode; min-height: 36px; padding: 0 8px; }
+.plasme-settings > .geometry-card:not(.window-settings-card) { grid-area: geometry; }
+.plasme-settings > .window-settings-card { grid-area: window; }
+.inspector-content .plasme-settings > .geometry-card { margin: 0; padding: 8px 10px; }
+.plasme-settings .section-heading p { margin-top: 2px; }
+.plasme-settings .window-bounds { gap: 8px; margin-top: 5px; }
+.plasme-settings .number-field input { margin-top: 3px; padding: 5px 8px; }
+.plasme-settings .keyboard-mode { min-height: 30px; margin-top: 6px; }
+.plasme-settings .toggle-row { margin-top: 6px; }
+@media (max-width: 700px) {
+  .plasme-settings:not([hidden]) {
+    grid-template-columns: 1fr;
+    grid-template-areas: "mode" "geometry" "window";
+  }
+}

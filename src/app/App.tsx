@@ -249,7 +249,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
             <button className="reset" onClick={() => void runAction(window.viewerApi.resetFr3Transform(), setNotice)}>{t('viewer.resetAdjustments', { defaultValue: 'Resetează ajustările' })}</button>
           </div>
 </div>
-          <div hidden={inspectorTab !== 'settings' || target !== 'plasme'}>
+          <div className="plasme-settings" hidden={inspectorTab !== 'settings' || target !== 'plasme'}>
             <div className="inspector-mode"><h2>{t('viewer.inspector.displayMode', { defaultValue: 'Mod afișare' })}</h2>              <div className="window-mode-actions" role="group" aria-label="Mod afișare Plasme">
                 <button type="button" className={`window-mode-button ${state.window.fullscreen ? 'active' : ''}`} aria-label="Afișează ieșirea Plasme pe tot ecranul" title="Plasme pe tot ecranul" onClick={() => void runAction(window.viewerApi.setWindow({ fullscreen: true }), setNotice)}><FullscreenIcon /></button>
                 <button type="button" className={`window-mode-button ${!state.window.fullscreen ? 'active' : ''}`} aria-label="Afișează ieșirea Plasme în fereastră" title="Plasme în fereastră" onClick={() => void runAction(window.viewerApi.setWindow({ fullscreen: false }), setNotice)}><WindowedIcon /></button>
