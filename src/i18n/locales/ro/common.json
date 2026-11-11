@@ -57,5 +57,15 @@
   "viewer.fr3.display": "Monitor Background",
   "viewer.fr3.alwaysFullscreen": "Background este afișat întotdeauna pe tot ecranul.",
   "viewer.fr3.imageLoadError": "Imaginea nu a putut fi încărcată.",
-  "viewer.fr3.videoLoadError": "Clipul MP4 nu poate fi redat."
+  "viewer.fr3.videoLoadError": "Clipul MP4 nu poate fi redat.",
+  "viewer.inspector.label": "Configurare ieșire",
+  "viewer.inspector.target": "Ieșire selectată",
+  "viewer.inspector.targetLabel": "Țintă",
+  "viewer.inspector.tabs": "Configurare",
+  "viewer.inspector.source": "Sursă",
+  "viewer.inspector.aspect": "Aspect",
+  "viewer.inspector.settings": "Setări",
+  "viewer.inspector.plasmeSource": "Sursă Plasme",
+  "viewer.inspector.displayMode": "Mod afișare",
+  "viewer.inspector.backgroundFullscreen": "Background este afișat pe tot ecranul."
 }

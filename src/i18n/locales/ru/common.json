@@ -57,5 +57,15 @@
   "viewer.fr3.display": "Экран Background",
   "viewer.fr3.alwaysFullscreen": "Background всегда отображается в полноэкранном режиме.",
   "viewer.fr3.imageLoadError": "Не удалось загрузить изображение.",
-  "viewer.fr3.videoLoadError": "Не удалось воспроизвести видео MP4."
+  "viewer.fr3.videoLoadError": "Не удалось воспроизвести видео MP4.",
+  "viewer.inspector.label": "Настройки выхода",
+  "viewer.inspector.target": "Выбранный выход",
+  "viewer.inspector.targetLabel": "Выход",
+  "viewer.inspector.tabs": "Настройки",
+  "viewer.inspector.source": "Источник",
+  "viewer.inspector.aspect": "Вид",
+  "viewer.inspector.settings": "Настройки",
+  "viewer.inspector.plasmeSource": "Источник Plasme",
+  "viewer.inspector.displayMode": "Режим отображения",
+  "viewer.inspector.backgroundFullscreen": "Background отображается во весь экран."
 }

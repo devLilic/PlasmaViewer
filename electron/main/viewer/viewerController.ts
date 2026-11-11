@@ -45,7 +45,7 @@ export class ViewerController {
   private readonly backgrounds: ReturnType<typeof createBackgroundLibrary>
   private state: ViewerState
   private applyingWindowSettings = false
-  private fr3Suppressed = false
+  private fr3Suppressed = !app.isPackaged
   private closeConfirmationPending = false
   private appliedNativeOrderSignature: string | null = null
 
@@ -598,15 +598,6 @@ export class ViewerController {
     const display = screen.getAllDisplays().find((item) => String(item.id) === this.state.window.displayId) ?? screen.getPrimaryDisplay()
     const activeBackground = this.refreshBackgrounds()
     if (this.state.fr3.activeBackgroundId && !activeBackground) this.state.error = viewerMessage('lostBackground')
-    const requiresFullscreenUpdate = !this.fr3Window.isFullScreen() || !sameBounds(this.fr3Window.getBounds(), display.bounds)
-    if (requiresFullscreenUpdate) {
-      if (this.fr3Window.isFullScreen()) this.fr3Window.setFullScreen(false)
-      this.fr3Window.setBounds(display.bounds)
-      this.fr3Window.setFullScreen(true)
-    }
-    // FR3 is a broadcast output: keep its fullscreen surface above the Windows
-    // taskbar and ordinary application windows whenever it is shown.
-    if (!this.fr3Window.isAlwaysOnTop()) this.fr3Window.setAlwaysOnTop(true, 'screen-saver')
     const shouldShow = !this.fr3Suppressed && shouldShowFr3(
       this.state.fr3.enabled,
       activeBackground,
@@ -615,7 +606,15 @@ export class ViewerController {
       this.isFr2AboveFr3(),
     )
     const wasVisible = this.fr3Window.isVisible()
+    let requiresFullscreenUpdate = false
     if (shouldShow) {
+      requiresFullscreenUpdate = !this.fr3Window.isFullScreen() || !sameBounds(this.fr3Window.getBounds(), display.bounds)
+      if (requiresFullscreenUpdate) {
+        if (this.fr3Window.isFullScreen()) this.fr3Window.setFullScreen(false)
+        this.fr3Window.setBounds(display.bounds)
+        this.fr3Window.setFullScreen(true)
+      }
+      if (!this.fr3Window.isAlwaysOnTop()) this.fr3Window.setAlwaysOnTop(true, 'screen-saver')
       if (!wasVisible) this.fr3Window.showInactive()
     } else if (wasVisible) this.fr3Window.hide()
     this.state.fr3.visible = shouldShow

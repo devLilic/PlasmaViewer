@@ -179,3 +179,34 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 @media (max-width: 860px) { .topbar { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; } .header-actions { grid-column: auto; } .viewer-navigation { order: 0; grid-column: auto; justify-self: end; gap: 0; } .viewer-navigation button { padding-inline: 9px; } .onair-control { padding-inline: 8px; } }
 @media (max-width: 540px) { .control-shell { padding: 8px; } .workspace { gap: 6px; } .preview-card, .geometry-card, .gallery-card, .panel { padding: 7px; border-radius: 9px; } .preview-meta strong { font-size: 10px; } .preview-meta small { font-size: 9px; } .actions { gap: 4px; } .actions button { padding: 0 5px; font-size: 9px; } .background-tile { width: 184px; flex-basis: 184px; padding: 4px; } .tile-actions { flex-direction: column; } .tile-actions button { min-height: 25px; font-size: 8px; } .gallery-heading { flex-direction: column; } .import-button { width: 100%; } .window-bounds { gap: 4px; } .number-field input { padding: 5px; font-size: 10px; } .transform-panel .range { margin: 8px 0; } .transform-panel .toggle-row { font-size: 10px; } .topbar { gap: 6px; } .onair-control { font-size: 8px; } }
 @media (max-width: 680px) { .keyboard-dialog-backdrop { padding: 10px; } .keyboard-dialog { max-height: calc(100vh - 20px); padding: 14px; border-radius: 13px; } .keyboard-dialog-cards { grid-template-columns: 1fr; gap: 9px; } .keyboard-instruction-card { min-height: auto; padding: 13px; } .keyboard-resize-card { gap: 9px; } .keyboard-shift-note { align-items: flex-start; justify-content: flex-start; margin: 9px 0; text-align: left; } .keyboard-dialog-footer { align-items: flex-start; } .keyboard-close-hint { align-items: flex-start; } }
+
+/* Output previews and the shared inspector */
+.topbar { display: flex; justify-content: space-between; }
+.topbar > .header-actions { margin-left: auto; }
+.workspace { align-items: stretch; }
+.preview-card { height: 100%; border-radius: 8px; background: #101b2a; }
+.preview-card.selected-output { border-color: #2685ff; box-shadow: 0 0 0 1px #2685ff; }
+.preview-card-heading { justify-content: flex-start; padding: 4px; }
+.column-title { font-size: 18px; letter-spacing: 0; }
+.output-status { padding: 4px 8px; border-radius: 5px; color: #b9d9ff; background: #174378; font-size: 10px; font-weight: 800; }
+.preview { max-width: none; border-radius: 5px; }
+.inspector { margin-top: 16px; overflow: hidden; border: 1px solid #2b3a50; border-radius: 8px; background: #101b2a; }
+.inspector-target, .inspector-tabs { display: flex; align-items: center; gap: 3px; padding: 10px 16px; border-bottom: 1px solid #2b3a50; }
+.inspector-target span { margin-right: 10px; color: #c4d1e3; font-size: 13px; }
+.inspector-target button, .inspector-tabs button { color: #c8d6e8; background: transparent; }
+.inspector-target button.active { color: #fff; background: #2079ee; }
+.inspector-tabs { padding-block: 0; }
+.inspector-tabs button { min-height: 44px; border-radius: 0; border-bottom: 3px solid transparent; }
+.inspector-tabs button.active { color: white; border-bottom-color: #36a5ff; }
+.inspector-content { padding: 16px; }
+.inspector-content .gallery-card, .inspector-content .panel, .inspector-content .geometry-card { margin-bottom: 10px; background: transparent; box-shadow: none; }
+.inspector-content .gallery-card { border: 0; padding: 0; }
+.inspector-content .background-tile { flex-basis: 220px; width: 220px; }
+.inspector-content .background-thumbnail { width: 100%; }
+.inspector-mode { display: flex; justify-content: space-between; align-items: center; padding: 12px; }
+.inspector-mode h2, .source-info h2 { font-size: 14px; }
+.source-info p { color: #a9b6ca; overflow-wrap: anywhere; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #70b6ff; outline-offset: 2px; }
+@media (max-width: 700px) { .workspace { flex-direction: column; } .output-column { width: 100%; } .topbar { flex-wrap: wrap; } }
+
+.output-select { min-height: 32px; padding: 0; color: inherit; background: transparent; font-size: inherit; }

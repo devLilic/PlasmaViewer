@@ -2,6 +2,14 @@
 
 The desktop interface labels FR2 **Plasme** and FR3 **Background**. The
 protocol and persisted settings use the FR2 and FR3 identifiers.
+In development, Background starts hidden even when previously enabled and
+appears after an explicit show action or an output show command.
+
+Control presents both output previews above a shared inspector. Its target
+selector chooses Plasme or Background, and its Sursă, Aspect and Setări tabs
+show controls for that output. Plasme retains fullscreen and windowed modes,
+geometry and keyboard adjustment. Background uses fullscreen. The gallery
+continues to select Background previews independently of the live output.
 
 PlasmaViewer listens on `127.0.0.1:47832` by default. Every request requires
 `Authorization: Bearer <PLASMA_VIEWER_TOKEN>`. The server accepts requests only
@@ -56,13 +64,11 @@ zoom, position and horizontal flip are independent of the FR2 adjustments and
 apply live. Slider changes do not alter native window bounds, fullscreen state,
 or z-order.
 
-FR2 fullscreen/windowed actions are at the top right of its preview card, beside
-the FR2 label. Its position/dimensions panel immediately follows the preview.
-Both image-adjustment panels can be folded using their keyboard-accessible
-headings. They start expanded; folding is UI-session state only and does not
-alter or reset either transform. Output display selection is not in Control:
-Settings contains one monitor selector shared by FR2 and FR3, and their persistent
-relative z-index controls.
+The shared inspector contains the source, transform and window controls for the
+selected output. Plasme window settings include fullscreen/windowed mode,
+position and dimensions, keyboard adjustment, topmost and 16:9 locking.
+Settings contains the shared output monitor and persistent relative z-index
+controls.
 
 The **Adaugă fișiere** dialog in **Background** accepts images and MP4 clips together. Viewer
 copies both into its managed gallery and persists entries across restarts.

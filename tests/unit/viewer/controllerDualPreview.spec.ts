@@ -184,6 +184,19 @@ describe('viewer controller dual preview behavior', () => {
     })
   }
 
+  it('keeps a previously enabled Background hidden at development startup until explicitly shown', async () => {
+    const background = await addBackground()
+    controller.showFr3()
+    electron.windows.splice(0)
+    const { ViewerController } = await import('../../../electron/main/viewer/viewerController')
+    const restarted = new ViewerController()
+    await restarted.createWindows()
+    expect(restarted.getState().fr3).toMatchObject({ enabled: true, visible: false, activeBackgroundId: background.id })
+    expect(electron.windows[2].setFullScreen).not.toHaveBeenCalledWith(true)
+    restarted.showFr3()
+    expect(restarted.getState().fr3.visible).toBe(true)
+  })
+
   it('uses the local media protocol for Plasma images stored on this computer', async () => {
     const command = {
       id: `show-command-${++showSequence}-local`,
