@@ -324,7 +324,7 @@ function BackgroundTile({ background, selected, applied, onSelect, onRemove, rem
     <div className="background-select-wrap">
       <button type="button" className="background-select" disabled={!background.available} onClick={onSelect} aria-label={t('viewer.fr3.selectBackground', { name, defaultValue: `Select ${name} for preview` })} aria-pressed={selected}>
         <span className="background-thumbnail">{!background.available ? <span aria-hidden="true">{t('viewer.fr3.unavailable', { defaultValue: 'Lipsă' })}</span>
-          : background.kind === 'video' ? <span className="video-thumbnail"><span aria-hidden="true">▶</span> MP4</span>
+          : background.kind === 'video' ? <VideoThumbnail url={background.url} />
           : <img src={background.url} alt="" />}</span>
         <span className="background-name">{background.name}</span>
         <span className="background-badges">{selected && <i>{t('viewer.fr3.selected', { defaultValue: 'Selectat' })}</i>}{applied && <i className="live-badge">{t('viewer.fr3.applied', { defaultValue: 'LIVE' })}</i>}</span>
@@ -332,6 +332,31 @@ function BackgroundTile({ background, selected, applied, onSelect, onRemove, rem
       <button type="button" className="tile-remove" disabled={removeDisabled} title={removeDisabled ? t('viewer.fr3.liveCannotRemove', { defaultValue: 'Ascunde Background înainte de a elimina fundalul activ.' }) : t('viewer.fr3.remove', { defaultValue: 'Elimină din galerie' })} aria-label={t('viewer.fr3.remove', { defaultValue: 'Elimină din galerie' })} onClick={onRemove}>×</button>
     </div>
   </div>
+}
+
+function VideoThumbnail({ url }: { url: string }) {
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => setFailed(false), [url])
+
+  return <>
+    {!failed && <video
+      className="video-thumbnail-frame"
+      src={url}
+      muted
+      playsInline
+      preload="auto"
+      aria-hidden="true"
+      onLoadedMetadata={event => {
+        const video = event.currentTarget
+        if (Number.isFinite(video.duration) && video.duration > 0) {
+          video.currentTime = Math.min(1, video.duration / 2)
+        }
+      }}
+      onError={() => setFailed(true)}
+    />}
+    <span className="video-thumbnail" aria-hidden="true">▶ MP4</span>
+  </>
 }
 
 type DisplayedActiveImage = { image: NonNullable<ViewerState['activeImage']>; transform: ViewerTransform }

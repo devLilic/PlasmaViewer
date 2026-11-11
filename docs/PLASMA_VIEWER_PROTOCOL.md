@@ -77,6 +77,8 @@ after the preview decodes its first frame. On FR3 the clip starts from the
 beginning, loops without sound and uses the same transform as an image.
 Hiding FR3 stops its player. An unplayable clip shows an error in the preview.
 Managed video URLs stream byte ranges for playback and seeking.
+MP4 gallery tiles show a paused frame from the clip and an MP4 badge. If the
+clip cannot be decoded, the badge remains visible on the thumbnail.
 The gallery is a single row with local horizontal scrolling when
 needed; long names are truncated visually without changing the saved name.
 Names initially come from imported filenames; rename controls are no longer
