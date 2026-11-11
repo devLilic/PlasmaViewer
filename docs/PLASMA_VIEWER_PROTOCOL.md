@@ -10,6 +10,8 @@ selector chooses Plasme or Background, and its Sursă, Aspect and Setări tabs
 show controls for that output. Plasme retains fullscreen and windowed modes,
 geometry and keyboard adjustment. Background uses fullscreen. The gallery
 continues to select Background previews independently of the live output.
+Preview surfaces retain a 16:9 aspect ratio. Aspect controls use a compact,
+responsive grid so both previews can remain visible while adjusting them.
 
 PlasmaViewer listens on `127.0.0.1:47832` by default. Every request requires
 `Authorization: Bearer <PLASMA_VIEWER_TOKEN>`. The server accepts requests only
