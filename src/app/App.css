@@ -325,6 +325,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .plasme-settings .number-field input { margin-top: 3px; padding: 5px 8px; }
 .plasme-settings .keyboard-mode { min-height: 30px; margin-top: 6px; }
 .plasme-settings .toggle-row { margin-top: 6px; }
+.preview-meta { justify-content: center; }
+.preview-meta .actions { width: auto; }
 @media (max-width: 700px) {
   .plasme-settings:not([hidden]) {
     grid-template-columns: 1fr;

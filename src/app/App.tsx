@@ -177,7 +177,6 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
             </div>
             <div className="preview"><ImageLayers state={state} preview /></div>
             <div className="preview-meta">
-              <div><strong>{state.activeImage?.title ?? 'Fără imagine'}</strong>{!state.activeImage && <small>Apasă onAIR în playlist</small>}{state.activeImage && <small className="image-source">Sursă locală: {state.activeImage.source ?? 'Fișier local indisponibil'}</small>}</div>
               <div className="actions">
                 <button className="secondary" disabled={!state.visible} onClick={() => void runAction(window.viewerApi.hideOutput(), setNotice)}><UiIcon name="hide" /> Ascunde</button>
                 <button className="primary" disabled={!canDisplay} onClick={() => void runAction(window.viewerApi.showOutput(), setNotice)}><UiIcon name="play" /> Afișează</button>
@@ -194,7 +193,6 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
 
             </div>
             <div className="preview-meta fr3-preview-meta">
-              <div><strong>{selectedBackground?.name ?? t('viewer.fr3.noSelection', { defaultValue: 'Selectează un fundal din galerie' })}</strong><small>{state.fr3.visible ? t('viewer.fr3.visible', { defaultValue: 'Background este afișat' }) : t('viewer.fr3.hidden', { defaultValue: 'Background este ascuns' })}</small></div>
               <div className="actions"><button className="secondary" disabled={!state.fr3.enabled} onClick={() => void runAction(window.viewerApi.hideFr3(), setNotice)}><UiIcon name="hide" /> {t('viewer.hide', { defaultValue: 'Ascunde' })}</button><button className="primary" disabled={!canShowFr3} onClick={() => void runAction(window.viewerApi.showFr3(), setNotice)}><UiIcon name="play" /> {t('viewer.show', { defaultValue: 'Afișează' })}</button></div>
             </div>
           </div>
