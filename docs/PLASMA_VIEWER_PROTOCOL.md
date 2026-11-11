@@ -10,6 +10,9 @@ selector chooses Plasme or Background, and its Sursă, Aspect and Setări tabs
 show controls for that output. Plasme retains fullscreen and windowed modes,
 geometry and keyboard adjustment. Background uses fullscreen. The gallery
 continues to select Background previews independently of the live output.
+Clicking a preview card selects its output for the inspector. The selected
+gallery thumbnail has a blue outline; the removal button appears on hover or
+keyboard focus, and on devices without hover.
 Preview surfaces retain a 16:9 aspect ratio. Aspect controls use a compact,
 responsive grid so both previews can remain visible while adjusting them.
 Plasme window settings place geometry and window options side by side when

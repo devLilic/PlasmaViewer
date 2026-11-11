@@ -171,7 +171,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
 
       <section className="workspace" aria-label={t('viewer.columns', { defaultValue: 'Previzualizări Plasme și Background' })}>
         <article className="output-column fr2-column" aria-labelledby="fr2-heading">
-          <div className={`preview-card ${target === 'plasme' ? 'selected-output' : ''}`}>
+          <div className={`preview-card ${target === 'plasme' ? 'selected-output' : ''}`} onClick={event => { if (!(event.target as Element).closest('button')) setTarget('plasme') }}>
             <div className="preview-card-heading">
               <h1 id="fr2-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'plasme'} onClick={() => setTarget('plasme')}>Plasme</button></h1><span className={`output-status ${state.visible ? 'is-live' : 'is-off'}`}>{state.visible ? 'ON AIR' : 'OFF AIR'}</span>
             </div>
@@ -186,7 +186,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
         </article>
 
         <article className="output-column fr3-column" aria-labelledby="fr3-heading">
-          <div className={`preview-card ${target === 'background' ? 'selected-output' : ''}`}>
+          <div className={`preview-card ${target === 'background' ? 'selected-output' : ''}`} onClick={event => { if (!(event.target as Element).closest('button')) setTarget('background') }}>
             <div className="preview-card-heading"><h1 id="fr3-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'background'} onClick={() => setTarget('background')}>Background</button></h1><span className={`output-status ${state.fr3.visible ? 'is-live' : ''}`}>{state.fr3.visible ? 'ON AIR' : 'PREVIZUALIZARE'}</span></div>
             <div className="preview fr3-preview" aria-label={t('viewer.fr3.preview', { defaultValue: 'Previzualizare Background' })}>
               {selectedBackground?.available ? <BackgroundLayers background={selectedBackground} transform={state.fr3.transform} playing={!hidden} onVideoReady={setReadyVideoUrl} /> : <div className="empty">{t('viewer.fr3.noSelection', { defaultValue: 'Selectează un fundal din galerie' })}</div>}
@@ -213,7 +213,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
             <div className="gallery-heading"><div><h2>{t('viewer.fr3.gallery', { defaultValue: 'Galerie locală Background' })}</h2><p>{t('viewer.fr3.galleryHint', { defaultValue: 'Selectarea schimbă doar previzualizarea.' })}</p></div><button className="primary import-button" onClick={() => void runAction(window.viewerApi.importBackgrounds(), setNotice)}><UiIcon name="plus" /> {t('viewer.fr3.addFiles', { defaultValue: 'Adaugă fișiere' })}</button></div>
             <div className="background-gallery">
               {state.backgrounds.length === 0 && <p className="gallery-empty">{t('viewer.fr3.emptyGallery', { defaultValue: 'Adaugă imagini sau clipuri MP4 pentru Background.' })}</p>}
-              {state.backgrounds.map(background => <BackgroundTile key={background.id} background={background} selected={background.id === state.fr3.selectedBackgroundId} applied={background.id === state.fr3.activeBackgroundId} onSelect={() => void runAction(window.viewerApi.selectBackground(background.id), setNotice)} onRemove={() => void runAction(window.viewerApi.removeBackground(background.id), setNotice)} removeDisabled={background.id === state.fr3.activeBackgroundId && state.fr3.enabled} />)}
+              {state.backgrounds.map(background => <BackgroundTile key={background.id} background={background} selected={background.id === state.fr3.selectedBackgroundId} onSelect={() => void runAction(window.viewerApi.selectBackground(background.id), setNotice)} onRemove={() => void runAction(window.viewerApi.removeBackground(background.id), setNotice)} removeDisabled={background.id === state.fr3.activeBackgroundId && state.fr3.enabled} />)}
             </div>
           </section>
 
@@ -327,7 +327,7 @@ function ArrowKeyCluster() {
   </div>
 }
 
-function BackgroundTile({ background, selected, applied, onSelect, onRemove, removeDisabled }: { background: ViewerState['backgrounds'][number]; selected: boolean; applied: boolean; onSelect: () => void; onRemove: () => void; removeDisabled: boolean }) {
+function BackgroundTile({ background, selected, onSelect, onRemove, removeDisabled }: { background: ViewerState['backgrounds'][number]; selected: boolean; onSelect: () => void; onRemove: () => void; removeDisabled: boolean }) {
   const { t } = useTranslation()
   const name = background.kind === 'video' ? `${background.name} (MP4)` : background.name
   return <div className={`background-tile ${selected ? 'selected' : ''}`}>
@@ -336,8 +336,6 @@ function BackgroundTile({ background, selected, applied, onSelect, onRemove, rem
         <span className="background-thumbnail">{!background.available ? <span aria-hidden="true">{t('viewer.fr3.unavailable', { defaultValue: 'Lipsă' })}</span>
           : background.kind === 'video' ? <VideoThumbnail url={background.url} />
           : <img src={background.url} alt="" />}</span>
-        <span className="background-name">{background.name}</span>
-        <span className="background-badges">{selected && <i>{t('viewer.fr3.selected', { defaultValue: 'Selectat' })}</i>}{applied && <i className="live-badge">{t('viewer.fr3.applied', { defaultValue: 'LIVE' })}</i>}</span>
       </button>
       <button type="button" className="tile-remove" disabled={removeDisabled} title={removeDisabled ? t('viewer.fr3.liveCannotRemove', { defaultValue: 'Ascunde Background înainte de a elimina fundalul activ.' }) : t('viewer.fr3.remove', { defaultValue: 'Elimină din galerie' })} aria-label={t('viewer.fr3.remove', { defaultValue: 'Elimină din galerie' })} onClick={onRemove}>×</button>
     </div>

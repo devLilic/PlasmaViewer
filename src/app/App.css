@@ -327,6 +327,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .plasme-settings .toggle-row { margin-top: 6px; }
 .preview-meta { justify-content: center; }
 .preview-meta .actions { width: auto; }
+.preview-card { cursor: pointer; }
+.inspector-content .background-tile { flex-basis: clamp(120px, 14.4%, 176px); width: clamp(120px, 14.4%, 176px); }
+.inspector-content .background-tile.selected .background-thumbnail { outline: 3px solid #29a3ff; outline-offset: -3px; }
+.tile-remove { opacity: 0; pointer-events: none; }
+.background-tile:hover .tile-remove, .background-tile:focus-within .tile-remove { opacity: 1; pointer-events: auto; }
+@media (hover: none) { .tile-remove { opacity: 1; pointer-events: auto; } }
 @media (max-width: 700px) {
   .plasme-settings:not([hidden]) {
     grid-template-columns: 1fr;
