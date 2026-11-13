@@ -45,7 +45,9 @@ export class ViewerController {
   private readonly backgrounds: ReturnType<typeof createBackgroundLibrary>
   private state: ViewerState
   private applyingWindowSettings = false
-  private fr3Suppressed = !app.isPackaged
+  // Keep persisted outputs off during bootstrap so FR3 cannot cover the
+  // control window before the operator has a chance to reach Settings.
+  private fr3Suppressed = true
   private devForcedFullscreen: boolean | null = null
   private closeConfirmationPending = false
   private appliedNativeOrderSignature: string | null = null
@@ -137,7 +139,10 @@ export class ViewerController {
     screen.on('display-metrics-changed', () => void this.handleDisplayChange())
 
     await Promise.all([this.loadView(this.controlWindow, 'control'), this.loadView(this.outputWindow, 'output'), this.loadView(this.fr3Window, 'fr3')])
-    await this.applyWindowSettings(this.state.window, true)
+    // Defer the saved fullscreen mode until an explicit FR2 show action. Applying
+    // fullscreen to an invisible BrowserWindow can surface it during Windows startup.
+    await this.applyWindowSettings({ ...this.state.window, fullscreen: false }, true)
+    this.outputWindow.hide()
     this.applyFr3Settings()
     this.broadcast()
     return this.controlWindow

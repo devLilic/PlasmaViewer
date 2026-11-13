@@ -262,6 +262,30 @@ describe('viewer controller dual preview behavior', () => {
     expect(electron.windows[2].isFullScreen()).toBe(true)
   })
 
+  it('keeps both outputs hidden after restart even when FR3 was enabled and FR2 was fullscreen', async () => {
+    const background = await addBackground()
+    await controller.selectBackground(background.id)
+    await controller.showFr3()
+    await controller.updateWindow({ fullscreen: true })
+
+    electron.windows.splice(0)
+    const module = await import('../../../electron/main/viewer/viewerController')
+    controller = new module.ViewerController()
+    await controller.createWindows()
+
+    const [, output, fr3] = electron.windows
+    expect(output.isVisible()).toBe(false)
+    expect(fr3.isVisible()).toBe(false)
+    expect(output.setFullScreen).not.toHaveBeenCalledWith(true)
+    expect(fr3.setFullScreen).not.toHaveBeenCalledWith(true)
+    expect(controller.getState()).toMatchObject({
+      visible: false,
+      activeImage: null,
+      window: { fullscreen: true },
+      fr3: { enabled: true, visible: false, activeBackgroundId: background.id },
+    })
+  })
+
   it('uses the local media protocol for Plasma images stored on this computer', async () => {
     const command = {
       id: `show-command-${++showSequence}-local`,

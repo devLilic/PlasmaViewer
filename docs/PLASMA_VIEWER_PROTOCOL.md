@@ -2,10 +2,10 @@
 
 The desktop interface labels FR2 **Plasme** and FR3 **Background**. The
 protocol and persisted settings use the FR2 and FR3 identifiers.
-In development, Background starts hidden even when previously enabled and
-appears after an explicit show action or an output show command. When running
-in development with a single detected display, activating either output uses
-windowed geometry so it does not cover the full display.
+At application startup, FR2 and FR3 stay hidden even if FR3 was previously
+enabled. The operator can show either output explicitly. In development with a
+single detected display, activating either output uses windowed geometry so it
+does not cover the full display.
 This temporary Plasme override does not change its saved fullscreen preference.
 
 Control presents both output previews above a shared inspector. Selecting a
@@ -132,6 +132,10 @@ It cannot receive focus or input. Updating either legacy display field updates
 both outputs. Migration prefers the previous FR2 display when available, then
 the previous FR3 display, then an available monitor; disconnecting a monitor
 also keeps both outputs on the same fallback display.
+On application startup, FR2 and FR3 remain hidden so the FR1 control window is
+accessible. The saved FR2 fullscreen preference is retained and applied when an
+explicit FR2 show action occurs. A saved enabled FR3 remains configured but is
+not shown until an explicit FR3 show action or an output show command.
 With the default order, FR3 stays behind windowed FR2. While visible fullscreen
 FR2 occupies their common display and is above FR3, FR3 is temporarily hidden
 and returns when FR2 is hidden or windowed. Explicitly placing FR3 above FR2

@@ -58,9 +58,9 @@ jobs:
           $version = node -p "require('./package.json').version"
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --repo $env:GITHUB_REPOSITORY --title "PlasmaVu $version" --notes "PlasmaVu $version for Windows. Includes the PlasmaVu dual-preview, FR2/FR3 background gallery, branding, and update improvements." --verify-tag
+            gh release create $tag --repo $env:GITHUB_REPOSITORY --title "PlasmaVu $version" --notes "PlasmaVu $version for Windows. Adds local MP4 backgrounds, safer output startup, and a refined dual-preview control interface." --verify-tag
           }
-          gh release edit $tag --repo $env:GITHUB_REPOSITORY --title "PlasmaVu $version" --notes "PlasmaVu $version for Windows. Includes the PlasmaVu dual-preview, FR2/FR3 background gallery, branding, and update improvements." --draft=false --prerelease=false
+          gh release edit $tag --repo $env:GITHUB_REPOSITORY --title "PlasmaVu $version" --notes "PlasmaVu $version for Windows. Adds local MP4 backgrounds, safer output startup, and a refined dual-preview control interface." --draft=false --prerelease=false
           gh release upload $tag --repo $env:GITHUB_REPOSITORY --clobber "release/$version/PlasmaVu-$version-x64.exe" "release/$version/PlasmaVu-$version-x64.exe.blockmap" "release/$version/latest.yml"
           $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json
           $windowsAssets = @("latest.yml", "PlasmaVu-$version-x64.exe", "PlasmaVu-$version-x64.exe.blockmap")

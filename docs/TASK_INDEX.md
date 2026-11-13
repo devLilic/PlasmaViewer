@@ -9,7 +9,7 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 | Task activ | PV-016 — Pornire și oprire robustă. |
 | Status | In progress — cazurile de bootstrap și procesele rămase după eroare trebuie închise controlat. |
 | Obiectiv | Elimină importurile opționale din pornire și închide curat resursele la erori sau quit. |
-| Verificări rămase | Testele unitare au 5 eșecuri (186/191 trec); verificarea manuală a închiderii normale/după eșec de pornire rămâne de făcut. |
+| Verificări rămase | Suita completă: 195/197; cele două teste database nu găsesc addon-ul nativ `better-sqlite3`, iar reconstruirea lui nu poate descărca header-ele Node 24 în mediul fără rețea. Verificarea manuală a închiderii normale/după eșec de pornire rămâne de făcut. |
 | Următorul task eligibil | Niciunul. |
 
 ## Registru taskuri

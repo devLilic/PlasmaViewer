@@ -101,6 +101,16 @@ Galeria locală FR3 acceptă imagini și MP4 din același dialog. Clipurile pers
 
 TypeScript, build Vite și testul Electron cu `Retrospectiva.mp4` au trecut. Suita Viewer/IPC are 60 de teste trecute și trei eșecuri preexistente. Testul Electron a folosit un profil temporar și răspunsuri simulate la dialogul de import. Verificarea multi-monitor rămâne deschisă. Detalii în [PV-017](task-briefs/PV-017.md).
 
+### PV-016 — follow-up pornire ieșiri — 2026-10-25
+
+FR2 și FR3 rămân ascunse la bootstrap. Preferința fullscreen FR2 este păstrată, dar geometria fullscreen este aplicată numai la afișarea explicită; FR3 nu intră în fullscreen și nu apare până la o comandă explicită de afișare sau o comandă `show` din Plasma. Testul de restart cu FR3 activată și FR2 fullscreen salvată trece. Testul focalizat `controllerDualPreview.spec.ts`: **27/28 PASS**; singurul eșec este așteptarea cunoscută de z-order/topmost pentru FR3. `tsc --noEmit` și buildurile Vite renderer/main/preload: **PASS**. Electron Builder directory-mode pentru Windows, cu runtime local și semnarea/decorarea binarului oprite: **PASS**; installerul NSIS nu s-a putut produce deoarece mediul nu poate descărca `winCodeSign`.
+
+În instalarea existentă 1.1.0, procesul a fost oprit controlat după `disconnect-outputs`; s-a făcut backup la `viewer-settings.pre-startup-output-fix-20261025.json`, apoi setările persistente `window.fullscreen=false` și `fr3.enabled=false` au fost aplicate fără a schimba galeria sau ajustările. Aplicația a fost repornită și endpointul local a confirmat titlul `PlasmaVu (1.1.0)`, `FR2 visible=false`, `FR2 fullscreen=false`, `FR3 enabled=false`, `FR3 visible=false`, cu cele 5 imagini din galerie păstrate. Verificarea manuală pe instalarea curentă este PASS; pachetul instalat nu conține încă schimbarea de cod, astfel încât oprirea persistentă a FR3 este susținută în această instalare de setările actualizate.
+
+### PV-016 — preflight pentru release — 2026-11-13
+
+Integrarea startup din worktree-ul `main` a fost păstrată împreună cu suportul dev windowed: FR2 și FR3 sunt ascunse la bootstrap în orice mediu, iar preferința fullscreen se aplică la acțiunea explicită de afișare. Testele focalizate controller/keyboard/module registry au trecut **39/39**. Suita completă a trecut **195/197**; cele două eșecuri sunt testele `better-sqlite3`, deoarece addon-ul nativ lipsește pentru Node 24.20.0, iar rebuild-ul offline nu poate descărca binarele sau header-ele Node. TypeScript și build Vite renderer/main/preload au trecut. Testarea manuală a închiderii normale și a eșecului de bootstrap cu profil temporar nu a fost repetată; PV-016 rămâne `In progress`.
+
 ## Format pentru intrări noi
 
 Pentru fiecare task finalizat, înlocuiește sau adaugă un rând care include:
