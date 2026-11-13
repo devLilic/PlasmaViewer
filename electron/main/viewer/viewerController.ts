@@ -366,9 +366,12 @@ export class ViewerController {
   selectBackground(id: string) {
     if (!this.backgrounds.available(id)) throw new Error(viewerMessage('unavailableBackground'))
     this.state.fr3.selectedBackgroundId = id
+    const isLive = this.state.fr3.enabled && !this.fr3Suppressed
+    if (isLive) this.state.fr3.activeBackgroundId = id
     this.state.error = null
+    if (isLive) this.applyFr3Settings()
     this.persist()
-    this.broadcast('control')
+    this.broadcast(isLive ? 'fr3' : 'control')
     return this.getState()
   }
 

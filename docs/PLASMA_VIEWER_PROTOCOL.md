@@ -15,8 +15,8 @@ settings together in Aspect; the larger keyboard-adjustment button sits below
 the image adjustment panel. Its fullscreen/windowed icon controls sit in the
 header when Plasme is selected. Background has only Sursă and Aspect tabs; Sursă
 contains the gallery without a visible heading or explanatory caption. The
-gallery continues to select Background previews independently of the live
-output.
+gallery selection changes only the preview while Background is hidden, and also
+changes the live source while Background is on air.
 Clicking a preview card selects its output for the inspector. The selected
 gallery thumbnail has a blue outline; the removal button appears on hover or
 keyboard focus, and on devices without hover.
@@ -78,9 +78,10 @@ FR1 Control uses the full available window width with two equal side-by-side
 columns and compact 16:9 previews. FR2 and FR3 labels sit at the top left inside
 their respective preview cards. The FR2 preview shows only the onAIR image
 received from `plasma.test`. The FR3 preview uses the selected gallery entry;
-selection changes the preview but does not change the live background. `Afișează`
-applies the selected background to FR3, and the previous live background remains
-in place until the new media is ready. The same loading behavior applies when a new
+selection changes only the preview when FR3 is hidden. While FR3 is on air,
+selection also changes the live background. `Afișează` applies the selected
+background when FR3 is hidden, and the previous live background remains in place
+until the new media is ready. The same loading behavior applies when a new
 onAIR image replaces the current FR2 image. FR3's brightness, contrast, saturation,
 zoom, position and horizontal flip are independent of the FR2 adjustments and
 apply live. Slider changes do not alter native window bounds, fullscreen state,

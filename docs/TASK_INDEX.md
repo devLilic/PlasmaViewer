@@ -33,6 +33,7 @@ Acesta este registrul compact al stării curente. Detaliile de implementare se a
 | [PV-015](task-briefs/PV-015.md) | Completed | PV-014 | `drizzle-orm` este dependență de producție și este inclus în arhiva aplicației. |
 | [PV-016](task-briefs/PV-016.md) | In progress | PV-015 | Pornirea/oprirerea aplicației și curățarea serverului/proceselor la erori. |
 | [PV-017](task-briefs/PV-017.md) | Completed | PV-008 | Import mixt de imagini și MP4, previzualizare și redare locală FR3. |
+| [PV-018](task-briefs/PV-018.md) | Completed | PV-017 | Selectarea unei surse Background schimbă și ieșirea live dacă FR3 este on air. |
 
 ## Ordine obligatorie
 

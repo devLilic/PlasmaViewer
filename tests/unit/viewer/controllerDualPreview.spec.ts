@@ -386,7 +386,7 @@ describe('viewer controller dual preview behavior', () => {
     expect(state.activeImage?.url).toMatch(/^plasma-viewer-background:\/\/source\//)
   })
 
-  it('keeps FR3 preview selection separate until showFr3 applies it live', async () => {
+  it('applies a newly selected background immediately while FR3 is live', async () => {
     const first = await addBackground()
     const second = await addBackground()
 
@@ -395,9 +395,28 @@ describe('viewer controller dual preview behavior', () => {
     expect(controller.getState().fr3).toMatchObject({ selectedBackgroundId: first.id, activeBackgroundId: first.id, visible: true })
 
     await controller.selectBackground(second.id)
-    expect(controller.getState().fr3.selectedBackgroundId).toBe(second.id)
-    expect(controller.getState().fr3.activeBackgroundId).toBe(first.id)
+    expect(controller.getState().fr3).toMatchObject({
+      selectedBackgroundId: second.id,
+      activeBackgroundId: second.id,
+      visible: true,
+    })
     expect(controller.getState().backgrounds.find((item) => item.id === second.id)?.available).toBe(true)
+  })
+
+  it('keeps preview selection separate from the live background while FR3 is hidden', async () => {
+    const first = await addBackground()
+    const second = await addBackground()
+
+    await controller.selectBackground(first.id)
+    await controller.showFr3()
+    controller.hideFr3()
+
+    await controller.selectBackground(second.id)
+    expect(controller.getState().fr3).toMatchObject({
+      selectedBackgroundId: second.id,
+      activeBackgroundId: first.id,
+      visible: false,
+    })
   })
 
   it('keeps FR2 and FR3 transforms independent and does not touch native window geometry for sliders', async () => {
@@ -684,7 +703,7 @@ describe('viewer controller dual preview behavior', () => {
     })
   })
 
-  it('persists a preview selection separately from the live background across startup', async () => {
+  it('persists the newly applied background across startup', async () => {
     const first = await addBackground()
     const second = await addBackground()
     await controller.selectBackground(first.id)
@@ -695,7 +714,7 @@ describe('viewer controller dual preview behavior', () => {
     const restarted = new ViewerController().getState()
 
     expect(restarted.fr3.selectedBackgroundId).toBe(second.id)
-    expect(restarted.fr3.activeBackgroundId).toBe(first.id)
+    expect(restarted.fr3.activeBackgroundId).toBe(second.id)
   })
 
   it('does not allow removing the active gallery item while FR3 is covered by fullscreen FR2', async () => {

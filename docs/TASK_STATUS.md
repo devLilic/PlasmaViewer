@@ -123,3 +123,7 @@ Pentru fiecare task finalizat, înlocuiește sau adaugă un rând care include:
 - taskul activat pentru handover.
 
 Pentru un task blocat, notează cauza, încercările relevante și pasul necesar pentru reluare fără a marca taskul `Completed`.
+
+## PV-018 — 2026-11-13 — Completed
+
+Selecția din galeria Background este aplicată imediat și pe FR3 cât timp ieșirea este activă; când FR3 este ascuns, selecția rămâne doar pentru previzualizare. Tranziția păstrează media live existentă până la încărcarea noii surse, iar selecția și sursa activă sunt salvate împreună. `controllerDualPreview.spec.ts`: **34/34 PASS**; `tsc` și buildurile Vite pentru renderer/main/preload: **PASS**. Împachetarea Electron nu s-a putut încheia deoarece Electron Builder nu a putut descărca runtime-ul de pe GitHub în mediul fără rețea. Verificarea vizuală pe ieșirea Electron rămâne manuală.
