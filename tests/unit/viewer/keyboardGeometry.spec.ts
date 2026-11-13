@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { getViewerKeyboardAdjustment } from '../../../src/shared/viewer/contracts'
 
 describe('viewer keyboard geometry mapping', () => {
-  it('maps arrow keys to ten-pixel movement and Ctrl arrows to size changes', () => {
+  it('maps arrow keys to ten-pixel movement and plus/minus to size changes', () => {
     expect(getViewerKeyboardAdjustment({ key: 'ArrowLeft', ctrlKey: false, shiftKey: false })).toEqual({ type: 'bounds', patch: { x: -10 } })
     expect(getViewerKeyboardAdjustment({ key: 'ArrowDown', ctrlKey: false, shiftKey: false })).toEqual({ type: 'bounds', patch: { y: 10 } })
-    expect(getViewerKeyboardAdjustment({ key: 'ArrowRight', ctrlKey: true, shiftKey: false })).toEqual({ type: 'bounds', patch: { width: 10 }, boundsChangedDimension: 'width' })
-    expect(getViewerKeyboardAdjustment({ key: 'ArrowUp', ctrlKey: true, shiftKey: false })).toEqual({ type: 'bounds', patch: { height: -10 }, boundsChangedDimension: 'height' })
+    expect(getViewerKeyboardAdjustment({ key: '+', ctrlKey: false, shiftKey: false })).toEqual({ type: 'resize', direction: 1, step: 10 })
+    expect(getViewerKeyboardAdjustment({ key: '-', ctrlKey: false, shiftKey: false })).toEqual({ type: 'resize', direction: -1, step: 10 })
   })
 
-  it('uses fifty-pixel steps with Shift, including Ctrl resize, and disables with Escape', () => {
+  it('uses fifty-pixel steps with Shift and disables with Escape', () => {
     expect(getViewerKeyboardAdjustment({ key: 'ArrowRight', ctrlKey: false, shiftKey: true })).toEqual({ type: 'bounds', patch: { x: 50 } })
-    expect(getViewerKeyboardAdjustment({ key: 'ArrowDown', ctrlKey: true, shiftKey: true })).toEqual({ type: 'bounds', patch: { height: 50 }, boundsChangedDimension: 'height' })
+    expect(getViewerKeyboardAdjustment({ key: '-', ctrlKey: false, shiftKey: true })).toEqual({ type: 'resize', direction: -1, step: 50 })
     expect(getViewerKeyboardAdjustment({ key: 'Escape', ctrlKey: false, shiftKey: false })).toEqual({ type: 'disable' })
   })
 

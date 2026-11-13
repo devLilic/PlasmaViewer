@@ -118,12 +118,20 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .window-bounds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 11px; }
 .number-field { display: block; color: #a9b6ca; font-size: 10px; font-weight: 700; }
 .number-field input { width: 100%; margin-top: 5px; padding: 8px; color: #eef5ff; border: 1px solid #3b4961; border-radius: 7px; background: rgba(16, 23, 37, .78); }
-.keyboard-adjustment { margin-top: 10px; outline: none; }
-.keyboard-adjustment:focus-visible { border-radius: 7px; box-shadow: 0 0 0 3px rgba(88,166,255,.25); }
-.keyboard-mode { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 36px; padding: 0 11px; color: #aebcd2; border: 1px solid #3b4961; background: rgba(19, 28, 45, .72); transition: .16s ease; }
-.keyboard-mode b { min-width: 34px; padding: 4px 7px; border-radius: 5px; color: #8d9bb2; font-size: 10px; letter-spacing: .08em; background: #39465b; }
-.keyboard-mode.active { color: #e8f3ff; border-color: rgba(76, 160, 255, .72); background: linear-gradient(100deg, rgba(18, 108, 211, .35), rgba(36, 58, 100, .6)); box-shadow: 0 0 20px rgba(35, 134, 244, .18); }
-.keyboard-mode.active b { color: #fff; background: #1689ff; box-shadow: 0 0 11px rgba(22,137,255,.6); }
+.keyboard-adjustment { min-width: 0; outline: none; }
+.keyboard-mode { display: flex; align-items: center; gap: 13px; width: 100%; min-height: 72px; padding: 12px 15px; color: #d4e4f8; border: 1px solid #36506e; border-radius: 10px; text-align: left; background: linear-gradient(110deg, rgba(22, 38, 60, .96), rgba(15, 26, 43, .96)); transition: .16s ease; }
+.keyboard-mode:hover:not(:disabled) { border-color: #4c9aff; background: linear-gradient(110deg, rgba(25, 54, 88, .98), rgba(17, 35, 58, .98)); }
+.keyboard-mode:focus-visible { outline: 3px solid rgba(88,166,255,.5); outline-offset: 2px; }
+.keyboard-mode:disabled { cursor: not-allowed; opacity: .58; }
+.keyboard-mode-icon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border: 1px solid rgba(116, 158, 206, .32); border-radius: 9px; color: #9db4d1; background: #1b2d45; }
+.keyboard-mode-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
+.keyboard-mode-copy { display: flex; min-width: 0; flex: 1 1 auto; flex-direction: column; gap: 4px; }
+.keyboard-mode-copy strong { color: #eaf3ff; font-size: 13px; font-weight: 750; }
+.keyboard-mode-copy small { color: #9dafc7; font-size: 10px; line-height: 1.45; }
+.keyboard-mode-status { min-width: 52px; padding: 7px 9px; border: 1px solid #4a5870; border-radius: 7px; color: #c5d0df; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-align: center; background: #344259; }
+.keyboard-mode-status.active { color: #fff; border-color: #1689ff; background: #1689ff; box-shadow: 0 0 14px rgba(22,137,255,.42); }
+.keyboard-mode.active { border-color: rgba(76, 160, 255, .82); background: linear-gradient(100deg, rgba(18, 108, 211, .4), rgba(36, 58, 100, .72)); box-shadow: 0 0 20px rgba(35, 134, 244, .2); }
+.keyboard-mode.active .keyboard-mode-icon { color: #c5e2ff; border-color: rgba(105, 180, 255, .55); background: #174779; }
 .keyboard-dialog-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(3, 7, 13, .78); backdrop-filter: blur(8px); }
 .keyboard-dialog { width: min(820px, 100%); max-height: calc(100vh - 40px); overflow: auto; padding: 22px; border: 1px solid #334865; border-radius: 18px; color: #edf4ff; background: linear-gradient(145deg, #111c2e, #0b1220); box-shadow: 0 24px 80px rgba(0, 0, 0, .58); }
 .keyboard-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
@@ -308,23 +316,35 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   .inspector-content .transform-panel { grid-template-columns: 1fr; }
 }
 
-/* Place Plasme window controls alongside its geometry on wider screens. */
-.plasme-settings:not([hidden]) {
+/* Keep all Plasme aspect and window controls in the selected output's inspector. */
+.plasme-aspect-layout:not([hidden]) {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
-  grid-template-areas: "geometry mode" "geometry window";
-  gap: 8px 12px;
-  align-items: start;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, .9fr);
+  grid-template-rows: auto auto;
+  grid-template-areas: "adjustments geometry" "keyboard window-settings";
+  gap: 10px;
+  align-items: stretch;
 }
-.plasme-settings > .inspector-mode { grid-area: mode; min-height: 36px; padding: 0 8px; }
-.plasme-settings > .geometry-card:not(.window-settings-card) { grid-area: geometry; }
-.plasme-settings > .window-settings-card { grid-area: window; }
-.inspector-content .plasme-settings > .geometry-card { margin: 0; padding: 8px 10px; }
-.plasme-settings .section-heading p { margin-top: 2px; }
-.plasme-settings .window-bounds { gap: 8px; margin-top: 5px; }
-.plasme-settings .number-field input { margin-top: 3px; padding: 5px 8px; }
-.plasme-settings .keyboard-mode { min-height: 30px; margin-top: 6px; }
-.plasme-settings .toggle-row { margin-top: 6px; }
+.plasme-adjustment-column, .plasme-aspect-side { display: contents; }
+.plasme-transform-panel { grid-area: adjustments; min-width: 0; margin: 0; }
+.plasme-aspect-layout > .plasme-adjustment-column > .keyboard-adjustment { display: flex; grid-area: keyboard; }
+.plasme-aspect-side > .geometry-card:first-child { grid-area: geometry; }
+.plasme-aspect-side > .window-settings-card { grid-area: window-settings; }
+.keyboard-mode { flex: 1; }
+.inspector-content .plasme-aspect-side > .geometry-card { margin: 0; padding: 9px 10px; }
+.plasme-aspect-side .section-heading p { margin-top: 2px; }
+.plasme-aspect-side .window-settings-heading h2 { font-size: 12px; }
+.plasme-aspect-side .toggle-row { margin-top: 6px; font-size: 11px; }
+.geometry-toolbar { display: flex; justify-content: flex-end; min-height: 17px; margin-bottom: 4px; }
+.window-bounds { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 0; }
+.window-bounds-group { min-width: 0; margin: 0; padding: 4px 0 0; border: 0; }
+.window-bounds-group + .window-bounds-group { padding-left: 14px; border-left: 1px solid rgba(115, 143, 178, .22); }
+.window-bounds-group legend { padding: 0; margin-bottom: 8px; color: #9fbde0; font-size: 11px; font-weight: 750; }
+.window-bounds-group .number-field + .number-field { margin-top: 11px; }
+.window-bounds-group .number-field input { margin-top: 5px; padding: 8px 9px; }
+.gallery-actions-only { justify-content: flex-end; margin-bottom: 4px; }
+.header-display-mode { gap: 3px; padding: 2px; }
+.header-display-mode .window-mode-button { width: 31px; min-height: 29px; }
 .preview-meta { justify-content: center; }
 .preview-meta .actions { width: auto; }
 .preview-card { cursor: pointer; }
@@ -332,6 +352,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding-inline: 20%;
 }
+.inspector-content .plasme-transform-panel { padding-inline: 12px; }
 .inspector-content .transform-panel .range:nth-of-type(1) { grid-area: 2 / 1; }
 .inspector-content .transform-panel .range:nth-of-type(2) { grid-area: 3 / 1; }
 .inspector-content .transform-panel .range:nth-of-type(3) { grid-area: 4 / 1; }
@@ -347,10 +368,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 @media (hover: none) { .tile-remove { opacity: 1; pointer-events: auto; } }
 @media (max-width: 700px) {
   .inspector-content .transform-panel { padding-inline: 8%; }
-  .plasme-settings:not([hidden]) {
-    grid-template-columns: 1fr;
-    grid-template-areas: "mode" "geometry" "window";
-  }
+  .inspector-content .plasme-transform-panel { padding-inline: 10px; }
+  .plasme-aspect-layout:not([hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "adjustments" "geometry" "keyboard" "window-settings"; }
+  .window-bounds { gap: 6px; }
 }
 
 /* Keep scrolling within the inspector and limit the gallery to two rows. */

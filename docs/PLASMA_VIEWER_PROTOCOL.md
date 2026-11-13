@@ -3,20 +3,32 @@
 The desktop interface labels FR2 **Plasme** and FR3 **Background**. The
 protocol and persisted settings use the FR2 and FR3 identifiers.
 In development, Background starts hidden even when previously enabled and
-appears after an explicit show action or an output show command.
+appears after an explicit show action or an output show command. When running
+in development with a single detected display, activating either output uses
+windowed geometry so it does not cover the full display.
+This temporary Plasme override does not change its saved fullscreen preference.
 
 Control presents both output previews above a shared inspector. Selecting a
-preview chooses Plasme or Background, and its Sursă, Aspect and Setări tabs
-show controls for that output. Plasme retains fullscreen and windowed modes,
-geometry and keyboard adjustment. Background uses fullscreen. The gallery
-continues to select Background previews independently of the live output.
+preview chooses Plasme or Background and changes the inspector to that output.
+Plasme keeps its image adjustments, keyboard adjustment, geometry and window
+settings together in Aspect; the larger keyboard-adjustment button sits below
+the image adjustment panel. Its fullscreen/windowed icon controls sit in the
+header when Plasme is selected. Background has only Sursă and Aspect tabs; Sursă
+contains the gallery without a visible heading or explanatory caption. The
+gallery continues to select Background previews independently of the live
+output.
 Clicking a preview card selects its output for the inspector. The selected
 gallery thumbnail has a blue outline; the removal button appears on hover or
 keyboard focus, and on devices without hover.
 Preview surfaces retain a 16:9 aspect ratio. Aspect controls use a compact,
 responsive grid so both previews can remain visible while adjusting them.
-Plasme window settings place geometry and window options side by side when
-space permits, with a stacked layout on narrow screens.
+Plasme adjustments use two columns across the available panel width. Geometry
+and keyboard mode share the upper and lower rows with window settings aligned
+beside keyboard mode; blocks in each row stretch to equal height, while the
+narrow layout stacks these sections. Geometry inputs
+remain grouped into Position and Size with open spacing and minimal borders.
+Each output preview shows one action button: Afișează while hidden and Ascunde
+while on air.
 When Plasme is hidden, changing its display mode or geometry saves the setting
 without showing the native output window. The saved settings are applied when
 the output is explicitly shown. Changes to a visible output apply immediately.
@@ -113,7 +125,9 @@ The first legacy-image migration preserves the original settings file as
 `viewer-settings.pre-dual-preview.json` in Viewer userData; retries do not
 overwrite that backup. Original imported files are never deleted.
 
-FR3 is a separate, fullscreen background window on the same display as FR2.
+FR3 is a separate, fullscreen background window on the same display as FR2,
+except in development with a single detected display, where it uses centered
+16:9 windowed geometry sized to at most 960 px wide.
 It cannot receive focus or input. Updating either legacy display field updates
 both outputs. Migration prefers the previous FR2 display when available, then
 the previous FR3 display, then an available monitor; disconnecting a monitor

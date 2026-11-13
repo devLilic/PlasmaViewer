@@ -92,6 +92,7 @@ const electron = vi.hoisted(() => {
   }
 
   return {
+    isPackaged: false,
     windows,
     defaultDisplays,
     displays,
@@ -108,7 +109,7 @@ const electron = vi.hoisted(() => {
 })
 
 vi.mock('electron', () => ({
-  app: { getPath: electron.getPath, getVersion: () => '1.0.2', quit: electron.quit },
+  app: { get isPackaged() { return electron.isPackaged }, getPath: electron.getPath, getVersion: () => '1.0.2', quit: electron.quit },
   BrowserWindow: electron.MockBrowserWindow,
   dialog: { showOpenDialog: electron.showOpenDialog, showMessageBox: electron.showMessageBox },
   nativeImage: { createFromPath: () => ({ isEmpty: () => false }) },
@@ -144,6 +145,7 @@ describe('viewer controller dual preview behavior', () => {
     electron.nativeOrderEvents.splice(0)
     electron.displayEvents.clear()
     electron.displays.splice(0, electron.displays.length, ...electron.defaultDisplays)
+    electron.isPackaged = false
     showSequence = 0
     electron.showOpenDialog.mockReset().mockResolvedValue({ canceled: true, filePaths: [] })
     electron.showMessageBox.mockReset().mockResolvedValue({ response: 0 })
@@ -217,6 +219,47 @@ describe('viewer controller dual preview behavior', () => {
     await controller.updateWindow({ fullscreen: true })
     expect(output.isVisible()).toBe(false)
     expect(output.setFullScreen).not.toHaveBeenCalled()
+  })
+
+  it('forces Plasme and Background activations to windowed mode in dev on a single display', async () => {
+    electron.displays.splice(0, electron.displays.length, electron.defaultDisplays[0])
+    await controller.updateWindow({ fullscreen: true })
+    const background = await addBackground()
+    await controller.selectBackground(background.id)
+
+    const output = electron.windows[1]
+    const fr3 = electron.windows[2]
+    await showOnAir()
+    expect(controller.getState().window.fullscreen).toBe(false)
+    expect(output.isFullScreen()).toBe(false)
+    expect(output.isVisible()).toBe(true)
+    expect(JSON.parse(readFileSync(path.join(storageDir, 'viewer-settings.json'), 'utf8')).window.fullscreen).toBe(true)
+
+    controller.hide()
+    expect(controller.getState().window.fullscreen).toBe(true)
+    await controller.updateWindow({ fullscreen: true })
+    await controller.showFr3()
+    expect(fr3.isFullScreen()).toBe(false)
+    expect(fr3.isVisible()).toBe(true)
+    expect(fr3.getBounds()).toEqual({ x: 480, y: 270, width: 960, height: 540 })
+  })
+
+  it('keeps configured fullscreen activation in production or with multiple displays', async () => {
+    await controller.updateWindow({ fullscreen: true })
+    await showOnAir()
+    expect(electron.windows[1].isFullScreen()).toBe(true)
+
+    controller.hide()
+    const background = await addBackground()
+    await controller.selectBackground(background.id)
+    await controller.showFr3()
+    expect(electron.windows[2].isFullScreen()).toBe(true)
+    controller.hideFr3()
+
+    electron.displays.splice(0, electron.displays.length, electron.defaultDisplays[0])
+    electron.isPackaged = true
+    await controller.showFr3()
+    expect(electron.windows[2].isFullScreen()).toBe(true)
   })
 
   it('uses the local media protocol for Plasma images stored on this computer', async () => {
@@ -526,6 +569,7 @@ describe('viewer controller dual preview behavior', () => {
   })
 
   it('falls back from the removed common display and keeps both windows together on hotplug', async () => {
+    electron.isPackaged = true
     const entry = await addBackground()
     await controller.updateWindow({ displayId: '1', fullscreen: false })
     await controller.selectBackground(entry.id)

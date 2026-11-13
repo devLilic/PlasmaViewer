@@ -46,6 +46,7 @@ export class ViewerController {
   private state: ViewerState
   private applyingWindowSettings = false
   private fr3Suppressed = !app.isPackaged
+  private devForcedFullscreen: boolean | null = null
   private closeConfirmationPending = false
   private appliedNativeOrderSignature: string | null = null
 
@@ -200,11 +201,13 @@ export class ViewerController {
     } else if (command.type === 'window') {
       const { boundsChangedDimension: _boundsChangedDimension, ...windowUpdate } = command.payload
       const previousWindow = { ...this.state.window, bounds: this.state.window.bounds ? { ...this.state.window.bounds } : null }
+      const previousDevForcedFullscreen = this.devForcedFullscreen
       this.state.window = {
         ...this.state.window,
         ...windowUpdate,
         bounds: windowUpdate.bounds === undefined ? this.state.window.bounds : windowUpdate.bounds,
       }
+      if (windowUpdate.fullscreen !== undefined) this.devForcedFullscreen = null
       if (typeof windowUpdate.displayId === 'string') this.state.fr3.displayId = windowUpdate.displayId
       else if (windowUpdate.displayId === null) this.state.fr3.displayId = String(screen.getPrimaryDisplay().id)
       if (windowUpdate.displayId !== undefined && typeof windowUpdate.displayId === 'string') {
@@ -215,6 +218,7 @@ export class ViewerController {
         await this.applyWindowSettings(this.state.window, shouldReposition, command.payload.boundsChangedDimension)
       } catch (error) {
         this.state.window = previousWindow
+        this.devForcedFullscreen = previousDevForcedFullscreen
         throw error
       }
       this.applyFr3Settings()
@@ -407,6 +411,10 @@ export class ViewerController {
   async showOutput() {
     if (!this.outputWindow || !this.state.activeImage) return this.getState()
     this.fr3Suppressed = false
+    if (this.shouldForceWindowedOutputsInDev()) {
+      if (this.devForcedFullscreen === null) this.devForcedFullscreen = this.state.window.fullscreen
+      this.state.window.fullscreen = false
+    }
     await this.applyWindowSettings(this.state.window, false, 'width', true)
     this.state.visible = true
     this.applyFr3Settings()
@@ -422,6 +430,7 @@ export class ViewerController {
     this.outputWindow?.hide()
     this.state.activeImage = null
     this.state.visible = false
+    this.restoreDevWindowMode()
     this.applyFr3Settings()
     this.broadcast()
     return this.getState()
@@ -434,6 +443,7 @@ export class ViewerController {
     this.fr3Window?.hide()
     this.state.visible = false
     this.state.fr3.visible = false
+    this.restoreDevWindowMode()
     this.broadcast()
     return this.getState()
   }
@@ -589,7 +599,10 @@ export class ViewerController {
   }
 
   private persist() {
-    this.store.write({ window: this.state.window, defaultImagePath: this.backgrounds.resolvePath(this.state.fr3.activeBackgroundId ?? ''), backgrounds: this.backgrounds.entries(), transformDefaults: {
+    const window = this.devForcedFullscreen === null
+      ? this.state.window
+      : { ...this.state.window, fullscreen: this.devForcedFullscreen }
+    this.store.write({ window, defaultImagePath: this.backgrounds.resolvePath(this.state.fr3.activeBackgroundId ?? ''), backgrounds: this.backgrounds.entries(), transformDefaults: {
       brightness: this.state.transformDefaults.brightness,
       contrast: this.state.transformDefaults.contrast,
       saturation: this.state.transformDefaults.saturation,
@@ -612,11 +625,28 @@ export class ViewerController {
     const wasVisible = this.fr3Window.isVisible()
     let requiresFullscreenUpdate = false
     if (shouldShow) {
-      requiresFullscreenUpdate = !this.fr3Window.isFullScreen() || !sameBounds(this.fr3Window.getBounds(), display.bounds)
-      if (requiresFullscreenUpdate) {
-        if (this.fr3Window.isFullScreen()) this.fr3Window.setFullScreen(false)
-        this.fr3Window.setBounds(display.bounds)
-        this.fr3Window.setFullScreen(true)
+      if (this.shouldForceWindowedOutputsInDev()) {
+        const width = Math.min(960, Math.floor(display.bounds.width * 0.7))
+        const height = Math.round(width * 9 / 16)
+        const bounds = normalizeViewerWindowBounds({
+          x: display.bounds.x + Math.round((display.bounds.width - width) / 2),
+          y: display.bounds.y + Math.round((display.bounds.height - height) / 2),
+          width,
+          height,
+        }, display.bounds, '16:9')
+        const wasFullscreen = this.fr3Window.isFullScreen()
+        requiresFullscreenUpdate = wasFullscreen || !sameBounds(this.fr3Window.getBounds(), bounds)
+        if (requiresFullscreenUpdate) {
+          this.fr3Window.setBounds(bounds)
+          if (wasFullscreen) this.fr3Window.setFullScreen(false)
+        }
+      } else {
+        requiresFullscreenUpdate = !this.fr3Window.isFullScreen() || !sameBounds(this.fr3Window.getBounds(), display.bounds)
+        if (requiresFullscreenUpdate) {
+          if (this.fr3Window.isFullScreen()) this.fr3Window.setFullScreen(false)
+          this.fr3Window.setBounds(display.bounds)
+          this.fr3Window.setFullScreen(true)
+        }
       }
       if (!this.fr3Window.isAlwaysOnTop()) this.fr3Window.setAlwaysOnTop(true, 'screen-saver')
       if (!wasVisible) this.fr3Window.showInactive()
@@ -630,6 +660,16 @@ export class ViewerController {
     return this.state.outputOrder.fr2 >= this.state.outputOrder.fr3
   }
 
+  private restoreDevWindowMode() {
+    if (this.devForcedFullscreen === null) return
+    this.state.window.fullscreen = this.devForcedFullscreen
+    this.devForcedFullscreen = null
+  }
+
+  private shouldForceWindowedOutputsInDev() {
+    return !app.isPackaged && screen.getAllDisplays().length === 1
+  }
+
   private applyNativeOutputOrder() {
     if (!this.outputWindow || !this.fr3Window) return
     const fr2Visible = this.outputWindow.isVisible()
@@ -641,7 +681,10 @@ export class ViewerController {
     if (this.outputWindow.isAlwaysOnTop() !== fr2IsAlwaysOnTop) {
       this.outputWindow.setAlwaysOnTop(fr2IsAlwaysOnTop, fr2IsAlwaysOnTop ? 'screen-saver' : 'normal')
     }
-    if (!this.fr3Window.isAlwaysOnTop()) this.fr3Window.setAlwaysOnTop(true, 'screen-saver')
+    const fr3IsAlwaysOnTop = fr3Visible
+    if (this.fr3Window.isAlwaysOnTop() !== fr3IsAlwaysOnTop) {
+      this.fr3Window.setAlwaysOnTop(fr3IsAlwaysOnTop, fr3IsAlwaysOnTop ? 'screen-saver' : 'normal')
+    }
     const signature = [
       this.state.window.displayId,
       this.state.window.fullscreen,

@@ -106,7 +106,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
   const { t } = useTranslation()
   const [notice, setNotice] = useState<string | null>(null)
   const [target, setTarget] = useState<'plasme' | 'background'>('background')
-  const [inspectorTab, setInspectorTab] = useState<'source' | 'aspect' | 'settings'>('source')
+  const [inspectorTab, setInspectorTab] = useState<'source' | 'aspect'>('source')
   const updateTransform = (patch: Partial<ViewerTransform>) => runAction(window.viewerApi.setTransform({ ...state.transform, ...patch }), setNotice)
   const updateFr3 = (patch: Partial<ViewerTransform>) => runAction(window.viewerApi.setFr3({ transform: { ...state.fr3.transform, ...patch } }), setNotice)
   const canDisplay = Boolean(state.activeImage)
@@ -124,7 +124,7 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
   }, [])
 
   useEffect(() => {
-    if (hidden || state.window.fullscreen || target !== 'plasme' || inspectorTab !== 'settings') setKeyboardAdjustEnabled(false)
+    if (hidden || state.window.fullscreen || target !== 'plasme' || inspectorTab !== 'aspect') setKeyboardAdjustEnabled(false)
   }, [hidden, state.window.fullscreen, target, inspectorTab])
 
   useEffect(() => {
@@ -160,76 +160,113 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
     setKeyboardAdjustEnabled(enabled)
   }
 
+  const selectTarget = (nextTarget: 'plasme' | 'background') => {
+    setTarget(nextTarget)
+    setInspectorTab(nextTarget === 'plasme' ? 'aspect' : 'source')
+  }
+
   return (
     <main className="control-shell control-workspace" hidden={hidden}>
       <header className="topbar">
         <Navigation page={page} onChange={onNavigate} />
         <div className="header-actions">
+          {target === 'plasme' && <div className="window-mode-actions header-display-mode" role="group" aria-label="Mod afișare Plasme">
+            <button type="button" className={`window-mode-button ${state.window.fullscreen ? 'active' : ''}`} aria-label="Afișează ieșirea Plasme pe tot ecranul" title="Plasme pe tot ecranul" onClick={() => void runAction(window.viewerApi.setWindow({ fullscreen: true }), setNotice)}><FullscreenIcon /></button>
+            <button type="button" className={`window-mode-button ${!state.window.fullscreen ? 'active' : ''}`} aria-label="Afișează ieșirea Plasme în fereastră" title="Plasme în fereastră" onClick={() => void runAction(window.viewerApi.setWindow({ fullscreen: false }), setNotice)}><WindowedIcon /></button>
+          </div>}
           <button className={`onair-control ${outputsLive ? 'live' : ''}`} disabled={!outputsLive} onClick={() => void runAction(window.viewerApi.disconnectOutputs(), setNotice)} aria-label="Deconectează ferestrele Plasme și Background"><UiIcon name="stop" /><span>{t('viewer.stopOutputs', { defaultValue: 'Oprește toate ieșirile' })}</span></button>
         </div>
       </header>
 
       <section className="workspace" aria-label={t('viewer.columns', { defaultValue: 'Previzualizări Plasme și Background' })}>
         <article className="output-column fr2-column" aria-labelledby="fr2-heading">
-          <div className={`preview-card ${target === 'plasme' ? 'selected-output' : ''}`} onClick={event => { if (!(event.target as Element).closest('button')) setTarget('plasme') }}>
+          <div className={`preview-card ${target === 'plasme' ? 'selected-output' : ''}`} onClick={event => { if (!(event.target as Element).closest('button')) selectTarget('plasme') }}>
             <div className="preview-card-heading">
-              <h1 id="fr2-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'plasme'} onClick={() => setTarget('plasme')}>Plasme</button></h1><span className={`output-status ${state.visible ? 'is-live' : 'is-off'}`}>{state.visible ? 'ON AIR' : 'OFF AIR'}</span>
+              <h1 id="fr2-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'plasme'} onClick={() => selectTarget('plasme')}>Plasme</button></h1><span className={`output-status ${state.visible ? 'is-live' : 'is-off'}`}>{state.visible ? 'ON AIR' : 'OFF AIR'}</span>
             </div>
             <div className="preview"><ImageLayers state={state} preview /></div>
             <div className="preview-meta">
               <div className="actions">
-                <button className="secondary" disabled={!state.visible} onClick={() => void runAction(window.viewerApi.hideOutput(), setNotice)}><UiIcon name="hide" /> Ascunde</button>
-                <button className="primary" disabled={!canDisplay} onClick={() => void runAction(window.viewerApi.showOutput(), setNotice)}><UiIcon name="play" /> Afișează</button>
+                {state.visible
+                  ? <button className="secondary" onClick={() => void runAction(window.viewerApi.hideOutput(), setNotice)}><UiIcon name="hide" /> Ascunde</button>
+                  : <button className="primary" disabled={!canDisplay} onClick={() => void runAction(window.viewerApi.showOutput(), setNotice)}><UiIcon name="play" /> Afișează</button>}
               </div>
             </div>
           </div>
         </article>
 
         <article className="output-column fr3-column" aria-labelledby="fr3-heading">
-          <div className={`preview-card ${target === 'background' ? 'selected-output' : ''}`} onClick={event => { if (!(event.target as Element).closest('button')) setTarget('background') }}>
-            <div className="preview-card-heading"><h1 id="fr3-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'background'} onClick={() => setTarget('background')}>Background</button></h1><span className={`output-status ${state.fr3.visible ? 'is-live' : ''}`}>{state.fr3.visible ? 'ON AIR' : 'PREVIZUALIZARE'}</span></div>
+          <div className={`preview-card ${target === 'background' ? 'selected-output' : ''}`} onClick={event => { if (!(event.target as Element).closest('button')) selectTarget('background') }}>
+            <div className="preview-card-heading"><h1 id="fr3-heading" className="column-title"><button type="button" className="output-select" aria-pressed={target === 'background'} onClick={() => selectTarget('background')}>Background</button></h1><span className={`output-status ${state.fr3.visible ? 'is-live' : ''}`}>{state.fr3.visible ? 'ON AIR' : 'PREVIZUALIZARE'}</span></div>
             <div className="preview fr3-preview" aria-label={t('viewer.fr3.preview', { defaultValue: 'Previzualizare Background' })}>
               {selectedBackground?.available ? <BackgroundLayers background={selectedBackground} transform={state.fr3.transform} playing={!hidden} onVideoReady={setReadyVideoUrl} /> : <div className="empty">{t('viewer.fr3.noSelection', { defaultValue: 'Selectează un fundal din galerie' })}</div>}
 
             </div>
             <div className="preview-meta fr3-preview-meta">
-              <div className="actions"><button className="secondary" disabled={!state.fr3.enabled} onClick={() => void runAction(window.viewerApi.hideFr3(), setNotice)}><UiIcon name="hide" /> {t('viewer.hide', { defaultValue: 'Ascunde' })}</button><button className="primary" disabled={!canShowFr3} onClick={() => void runAction(window.viewerApi.showFr3(), setNotice)}><UiIcon name="play" /> {t('viewer.show', { defaultValue: 'Afișează' })}</button></div>
+              <div className="actions">{state.fr3.visible
+                ? <button className="secondary" onClick={() => void runAction(window.viewerApi.hideFr3(), setNotice)}><UiIcon name="hide" /> {t('viewer.hide', { defaultValue: 'Ascunde' })}</button>
+                : <button className="primary" disabled={!canShowFr3} onClick={() => void runAction(window.viewerApi.showFr3(), setNotice)}><UiIcon name="play" /> {t('viewer.show', { defaultValue: 'Afișează' })}</button>}</div>
             </div>
           </div>
         </article>
       </section>
       <section className="inspector" aria-label={t('viewer.inspector.label', { defaultValue: 'Configurare ieșire' })}>
-        <div className="inspector-tabs" role="tablist" aria-label={t('viewer.inspector.tabs', { defaultValue: 'Configurare' })}>
-          {(['source', 'aspect', 'settings'] as const).map(tab => <button key={tab} type="button" role="tab" aria-selected={inspectorTab === tab} className={inspectorTab === tab ? 'active' : ''} onClick={() => setInspectorTab(tab)}>{t(`viewer.inspector.${tab}`, { defaultValue: tab === 'source' ? 'Sursă' : tab === 'aspect' ? 'Aspect' : 'Setări' })}</button>)}
-        </div>
+        {target === 'background' && <div className="inspector-tabs" role="tablist" aria-label={t('viewer.inspector.tabs', { defaultValue: 'Configurare' })}>
+          {(['source', 'aspect'] as const).map(tab => <button key={tab} type="button" role="tab" aria-selected={inspectorTab === tab} className={inspectorTab === tab ? 'active' : ''} onClick={() => setInspectorTab(tab)}>{t(`viewer.inspector.${tab}`, { defaultValue: tab === 'source' ? 'Sursă' : 'Aspect' })}</button>)}
+        </div>}
         <div className="inspector-content">
           <div className="gallery-pane" hidden={inspectorTab !== 'source' || target !== 'background'}>
-          <section className="gallery-card" aria-label={t('viewer.fr3.gallery', { defaultValue: 'Galerie locală Background' })}>
-            <div className="gallery-heading"><div><h2>{t('viewer.fr3.gallery', { defaultValue: 'Galerie locală Background' })}</h2><p>{t('viewer.fr3.galleryHint', { defaultValue: 'Selectarea schimbă doar previzualizarea.' })}</p></div><button className="primary import-button" onClick={() => void runAction(window.viewerApi.importBackgrounds(), setNotice)}><UiIcon name="plus" /> {t('viewer.fr3.addFiles', { defaultValue: 'Adaugă fișiere' })}</button></div>
+          <section className="gallery-card" aria-label="Fundaluri disponibile">
+            <div className="gallery-heading gallery-actions-only"><button className="primary import-button" onClick={() => void runAction(window.viewerApi.importBackgrounds(), setNotice)}><UiIcon name="plus" /> {t('viewer.fr3.addFiles', { defaultValue: 'Adaugă fișiere' })}</button></div>
             <div className="background-gallery">
               {state.backgrounds.length === 0 && <p className="gallery-empty">{t('viewer.fr3.emptyGallery', { defaultValue: 'Adaugă imagini sau clipuri MP4 pentru Background.' })}</p>}
               {state.backgrounds.map(background => <BackgroundTile key={background.id} background={background} selected={background.id === state.fr3.selectedBackgroundId} onSelect={() => void runAction(window.viewerApi.selectBackground(background.id), setNotice)} onRemove={() => void runAction(window.viewerApi.removeBackground(background.id), setNotice)} removeDisabled={background.id === state.fr3.activeBackgroundId && state.fr3.enabled} />)}
             </div>
           </section>
+          </div>
 
+          <div className="plasme-aspect-layout" hidden={inspectorTab !== 'aspect' || target !== 'plasme'}>
+          <div className="plasme-adjustment-column">
+            <div className="panel transform-panel plasme-transform-panel">
+              <h2>Ajustări Plasme</h2>
+              <Range label="Luminozitate" value={state.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateTransform({ brightness })} />
+              <Range label="Contrast" value={state.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateTransform({ contrast })} />
+              <Range label="Saturație" value={state.transform.saturation} min={0} max={200} unit="%" onChange={saturation => updateTransform({ saturation })} />
+              <Range label="Zoom" value={state.transform.zoom} min={1} max={4} step={0.01} unit="×" onChange={zoom => updateTransform({ zoom })} />
+              <Range label="Poziție X" value={state.transform.panX} min={-maxViewerPanForZoom(state.transform.zoom)} max={maxViewerPanForZoom(state.transform.zoom)} unit="%" onChange={panX => updateTransform({ panX })} />
+              <Range label="Poziție Y" value={state.transform.panY} min={-maxViewerPanForZoom(state.transform.zoom)} max={maxViewerPanForZoom(state.transform.zoom)} unit="%" onChange={panY => updateTransform({ panY })} />
+              <Toggle label="Flip orizontal" checked={state.transform.flipX} onChange={flipX => updateTransform({ flipX })} />
+              <button className="reset" onClick={() => void runAction(window.viewerApi.resetTransform(), setNotice)}>Resetează ajustările</button>
+            </div>
+            <div className="keyboard-adjustment" aria-label={t('viewer.fr2.keyboardTitle', { defaultValue: 'Ajustare Plasme din taste' })}>
+              <button ref={keyboardModeButtonRef} type="button" className={`keyboard-mode ${keyboardAdjustEnabled ? 'active' : ''}`} disabled={state.window.fullscreen} onClick={() => toggleKeyboardAdjust(!keyboardAdjustEnabled)} aria-pressed={keyboardAdjustEnabled}>
+                <span className="keyboard-mode-icon" aria-hidden="true"><KeyboardIcon /></span>
+                <span className="keyboard-mode-copy"><strong>{t('viewer.fr2.keyboardTitle', { defaultValue: 'Ajustare Plasme din taste' })}</strong></span>
+                <span className={`keyboard-mode-status ${keyboardAdjustEnabled ? 'active' : ''}`}>{keyboardAdjustEnabled ? 'ON' : 'OFF'}</span>
+              </button>
+            </div>
           </div>
-          <div hidden={inspectorTab !== 'source' || target !== 'plasme'} className="source-info">
-            <h2>{t('viewer.inspector.plasmeSource', { defaultValue: 'Sursă Plasme' })}</h2>
-            <p>{state.activeImage?.title ?? t('viewer.fr2.empty', { defaultValue: 'Nicio imagine selectată din Plasma' })}</p>
-            {state.activeImage?.source && <p>{state.activeImage.source}</p>}
+          <div className="plasme-aspect-side">
+            <section className="geometry-card">
+              <div className="geometry-toolbar"><span className="geometry-mode" aria-label="Raport aspect">{state.window.aspectMode === '16:9' ? '16:9 blocat' : 'liber'}</span></div>
+              <div className="window-bounds">
+                <fieldset className="window-bounds-group"><legend>Poziție</legend>
+                  <NumberField label="Stânga" value={state.window.bounds?.x ?? 0} onChange={x => updateWindowBounds(state, { x }, setNotice)} />
+                  <NumberField label="Sus" value={state.window.bounds?.y ?? 0} onChange={y => updateWindowBounds(state, { y }, setNotice)} />
+                </fieldset>
+                <fieldset className="window-bounds-group"><legend>Dimensiune</legend>
+                  <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width }, setNotice)} />
+                  <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height }, setNotice)} />
+                </fieldset>
+              </div>
+            </section>
+            <section className="geometry-card window-settings-card" aria-label="Setări fereastră Plasme">
+              <div className="window-settings-heading"><h2>{t('viewer.fr2.windowSettings', { defaultValue: 'Fereastră Plasme' })}</h2></div>
+              <Toggle label="Întotdeauna deasupra" checked={state.window.topmost} onChange={checked => void runAction(window.viewerApi.setWindow({ topmost: checked }), setNotice)} />
+              <Toggle label="Fixează 16:9" checked={state.window.aspectMode === '16:9'} onChange={checked => void runAction(window.viewerApi.setWindow({ aspectMode: checked ? '16:9' : 'free' }), setNotice)} />
+            </section>
           </div>
-          <div hidden={inspectorTab !== 'aspect' || target !== 'plasme'}>          <div className="panel transform-panel">
-            <h2>Ajustări Plasme</h2>
-            <Range label="Luminozitate" value={state.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateTransform({ brightness })} />
-            <Range label="Contrast" value={state.transform.contrast} min={0} max={200} unit="%" onChange={contrast => updateTransform({ contrast })} />
-            <Range label="Saturație" value={state.transform.saturation} min={0} max={200} unit="%" onChange={saturation => updateTransform({ saturation })} />
-            <Range label="Zoom" value={state.transform.zoom} min={1} max={4} step={0.01} unit="×" onChange={zoom => updateTransform({ zoom })} />
-            <Range label="Poziție X" value={state.transform.panX} min={-maxViewerPanForZoom(state.transform.zoom)} max={maxViewerPanForZoom(state.transform.zoom)} unit="%" onChange={panX => updateTransform({ panX })} />
-            <Range label="Poziție Y" value={state.transform.panY} min={-maxViewerPanForZoom(state.transform.zoom)} max={maxViewerPanForZoom(state.transform.zoom)} unit="%" onChange={panY => updateTransform({ panY })} />
-            <Toggle label="Flip orizontal" checked={state.transform.flipX} onChange={flipX => updateTransform({ flipX })} />
-            <button className="reset" onClick={() => void runAction(window.viewerApi.resetTransform(), setNotice)}>Resetează ajustările</button>
           </div>
-</div>
           <div hidden={inspectorTab !== 'aspect' || target !== 'background'}>          <div className="panel transform-panel fr3-transform-panel">
             <h2>{t('viewer.fr3.adjustments', { defaultValue: 'Ajustări Background' })}</h2>
             <Range label={t('viewer.brightness', { defaultValue: 'Luminozitate' })} value={state.fr3.transform.brightness} min={0} max={200} unit="%" onChange={brightness => updateFr3({ brightness })} />
@@ -242,36 +279,6 @@ function Control({ state, hidden, page, onNavigate }: { state: ViewerState; hidd
             <button className="reset" onClick={() => void runAction(window.viewerApi.resetFr3Transform(), setNotice)}>{t('viewer.resetAdjustments', { defaultValue: 'Resetează ajustările' })}</button>
           </div>
 </div>
-          <div className="plasme-settings" hidden={inspectorTab !== 'settings' || target !== 'plasme'}>
-            <div className="inspector-mode"><h2>{t('viewer.inspector.displayMode', { defaultValue: 'Mod afișare' })}</h2>              <div className="window-mode-actions" role="group" aria-label="Mod afișare Plasme">
-                <button type="button" className={`window-mode-button ${state.window.fullscreen ? 'active' : ''}`} aria-label="Afișează ieșirea Plasme pe tot ecranul" title="Plasme pe tot ecranul" onClick={() => void runAction(window.viewerApi.setWindow({ fullscreen: true }), setNotice)}><FullscreenIcon /></button>
-                <button type="button" className={`window-mode-button ${!state.window.fullscreen ? 'active' : ''}`} aria-label="Afișează ieșirea Plasme în fereastră" title="Plasme în fereastră" onClick={() => void runAction(window.viewerApi.setWindow({ fullscreen: false }), setNotice)}><WindowedIcon /></button>
-              </div>
-</div>
-          <section className="geometry-card">
-            <div className="section-heading"><div><h2>Poziție și dimensiune Plasme</h2><p>Se aplică în modul windowed.</p></div><span className="geometry-mode">{state.window.aspectMode === '16:9' ? '16:9 blocat' : 'liber'}</span></div>
-            <div className="window-bounds">
-              <NumberField label="Stânga" value={state.window.bounds?.x ?? 0} onChange={x => updateWindowBounds(state, { x }, setNotice)} />
-              <NumberField label="Sus" value={state.window.bounds?.y ?? 0} onChange={y => updateWindowBounds(state, { y }, setNotice)} />
-              <NumberField label="Lățime" value={state.window.bounds?.width ?? 1280} min={320} onChange={width => updateWindowBounds(state, { width }, setNotice)} />
-              <NumberField label="Înălțime" value={state.window.bounds?.height ?? 720} min={180} onChange={height => updateWindowBounds(state, { height }, setNotice)} />
-            </div>
-            <div className="keyboard-adjustment" aria-label={t('viewer.fr2.keyboardTitle', { defaultValue: 'Ajustare Plasme din taste' })}>
-              <button ref={keyboardModeButtonRef} type="button" className={`keyboard-mode ${keyboardAdjustEnabled ? 'active' : ''}`} disabled={state.window.fullscreen} onClick={() => toggleKeyboardAdjust(!keyboardAdjustEnabled)}><span>{t('viewer.fr2.keyboardTitle', { defaultValue: 'Ajustare Plasme din taste' })}</span><b>{keyboardAdjustEnabled ? 'ON' : 'OFF'}</b></button>
-            </div>
-          </section>
-
-          <section className="geometry-card window-settings-card" aria-label="Setări fereastră Plasme">
-            <div className="window-settings-heading"><h2>{t('viewer.fr2.windowSettings', { defaultValue: 'Fereastră Plasme' })}</h2></div>
-            <Toggle label="Întotdeauna deasupra" checked={state.window.topmost} onChange={checked => void runAction(window.viewerApi.setWindow({ topmost: checked }), setNotice)} />
-            <Toggle label="Fixează 16:9" checked={state.window.aspectMode === '16:9'} onChange={checked => void runAction(window.viewerApi.setWindow({ aspectMode: checked ? '16:9' : 'free' }), setNotice)} />
-          </section>
-
-          </div>
-          <div hidden={inspectorTab !== 'settings' || target !== 'background'} className="source-info">
-            <h2>{t('viewer.inspector.displayMode', { defaultValue: 'Mod afișare' })}</h2>
-            <p>{t('viewer.inspector.backgroundFullscreen', { defaultValue: 'Background este afișat pe tot ecranul.' })}</p>
-          </div>
         </div>
       </section>
       {(notice || state.error) && <div className="error" role="status">{notice ?? state.error}</div>}
@@ -546,6 +553,10 @@ function FullscreenIcon() {
 
 function WindowedIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
+}
+
+function KeyboardIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h17a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 16V8a1.5 1.5 0 0 1 1.5-1.5Z" /><path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M6 13h.01M9 13h.01M12 13h.01M15 13h.01M18 13h.01M8 16h8" /></svg>
 }
 
 function NumberField({ label, value, min, max, onChange }: { label: string; value: number; min?: number; max?: number; onChange: (value: number) => void }) {
